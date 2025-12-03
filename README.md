@@ -2,6 +2,8 @@
 
 Comprehensive commit analysis tool combining pre-analysis and static analysis with LangGraph and OpenAI LLM.
 
+Requirement to use main.py TUI mode: fzf installed (see TUI_README.md)
+
 ## Overview
 
 This tool analyzes git repository commits to detect potential security issues and malicious code, specifically designed for npm packages. It implements a two-phase analysis workflow:
