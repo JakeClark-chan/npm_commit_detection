@@ -1,0 +1,150 @@
+================================================================================
+NPM COMMIT DETECTION - COMPREHENSIVE ANALYSIS REPORT
+================================================================================
+
+Repository: ../mongoose
+Version: 8.19.1
+Previous Version: 8.19.0
+Analysis Date: 2025-11-12T13:59:16.318016
+
+================================================================================
+PART 1: PRE-ANALYSIS
+================================================================================
+=== PRE-ANALYSIS REPORT FOR VERSION 8.19.1 ===
+
+Repository: mongoose
+Analysis Date: 2025-11-12T13:58:22.557476
+
+Total commits analyzed: 31
+Commit range: 8.19.0 -> 8.19.1
+
+
+--- 1. METADATA ANALYSIS ---
+
+Total unique files changed: 16
+Sensitive files modified: 8
+
+Sensitive file modifications:
+  - package.json (modified in 11 commit(s): b2ae2881, 8951fe7c, 4d2d0061, ff90ad3c, 3e9336d4, 87f0f979, 5bdee033, 7573dac1, d4b1d22b, c9183616, 5e263a2b)
+  - .github/workflows/benchmark.yml (modified in 2 commit(s): 90f60ded, 2f2a573a)
+  - .github/workflows/documentation.yml (modified in 2 commit(s): 90f60ded, 2f2a573a)
+  - .github/workflows/encryption-tests.yml (modified in 2 commit(s): 90f60ded, 2f2a573a)
+  - .github/workflows/test.yml (modified in 4 commit(s): 90f60ded, 0b99a5ac, 2f2a573a, 4a19a335)
+  - .github/workflows/tidelift-alignment.yml (modified in 2 commit(s): 90f60ded, 2f2a573a)
+  - .github/workflows/tsd.yml (modified in 2 commit(s): 90f60ded, 2f2a573a)
+  - .github/workflows/stale.yml (modified in 2 commit(s): f542dc45, 43177724)
+
+⚠️  ALERT: package.json was modified - check for dependency changes
+
+--- 2. CONTRIBUTOR TRUST ANALYSIS ---
+
+Total contributors: 4
+Trusted contributors (trust >= 0.7): 0
+New contributors (< 5 commits): 2
+Low-trust contributors (trust < 0.3): 3
+
+New contributors:
+  - Orgad Shaneh <orgad.shaneh@audiocodes.com> (1 commit(s))
+  - aalok <aalok@andromeda.uni> (1 commit(s))
+
+⚠️  Low-trust contributors:
+  - Orgad Shaneh <orgad.shaneh@audiocodes.com> (trust: 0.02, commits: 1)
+  - aalok <aalok@andromeda.uni> (trust: 0.02, commits: 1)
+  - dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com> (trust: 0.16, commits: 8)
+
+--- 3. CODE AND LIBRARY CHANGES ANALYSIS ---
+
+Total lines added: 275
+Total lines deleted: 152
+Net change: +123 lines
+
+🔍 Dependency changes detected:
+  - b2ae2881 modified package.json by Valeri Karpov (+1/-1)
+  - 8951fe7c modified package.json by Valeri Karpov (+1/-1)
+  - 4d2d0061 modified package.json by dependabot[bot] (+1/-1)
+  - ff90ad3c modified package.json by Valeri Karpov (+1/-1)
+  - 3e9336d4 modified package.json by Valeri Karpov (+1/-1)
+  - 87f0f979 modified package.json by Valeri Karpov (+1/-1)
+  - 5bdee033 modified package.json by dependabot[bot] (+1/-1)
+  - 7573dac1 modified package.json by Valeri Karpov (+1/-1)
+  - d4b1d22b modified package.json by dependabot[bot] (+1/-1)
+  - c9183616 modified package.json by dependabot[bot] (+1/-1)
+  - 5e263a2b modified package.json by dependabot[bot] (+1/-1)
+
+--- END OF PRE-ANALYSIS ---
+
+================================================================================
+PART 2: STATIC ANALYSIS
+================================================================================
+
+================================================================================
+STATIC ANALYSIS REPORT
+================================================================================
+
+Total Security Issues Found: 4
+
+Issues by Severity:
+  HIGH: 2
+  MEDIUM: 2
+
+Issues by Category:
+  suspicious_network_access: 2
+  code_injection: 2
+
+Import Analysis:
+
+--------------------------------------------------------------------------------
+DETAILED ISSUES
+--------------------------------------------------------------------------------
+
+[1] MEDIUM - suspicious_network_access
+    Commit: a24dce3c
+    File: unknown
+    Line: 1
+    Description: The commit contains URLs that may lead to unexpected network access.
+    Code: https://deno.land/), http://nodejs.org/), https://www.mongodb.or...
+    Recommendation: Review the usage of these URLs to ensure they are necessary and do not lead to data exfiltration or unwanted network requests.
+
+[2] HIGH - code_injection
+    Commit: 8fb36bfe
+    File: unknown
+    Line: 42
+    Description: The use of exec() can lead to command injection vulnerabilities if untrusted input is passed to it.
+    Code: exec(userInput, callback);...
+    Recommendation: Avoid using exec() with untrusted input. Use safer alternatives or sanitize the input thoroughly.
+
+[3] MEDIUM - suspicious_network_access
+    Commit: d372c482
+    File: unknown
+    Description: The commit contains links to external resources that may lead to unexpected network access.
+    Code: https://github.com/Automattic/mongoose/graphs/contr, https://www.mongodb.org/downloads), http://node...
+    Recommendation: Review the necessity of including external links in documentation. Ensure that these links do not lead to malicious sites or unintended data exposure.
+
+[4] HIGH - code_injection
+    Commit: d76f4953
+    File: unknown
+    Line: 1
+    Description: Usage of eval() function detected, which can execute arbitrary code and lead to code injection vulnerabilities.
+    Code: eval: function(...
+    Recommendation: Avoid using eval() and consider safer alternatives for executing code.
+
+================================================================================
+END OF STATIC ANALYSIS REPORT
+================================================================================
+
+
+================================================================================
+SUMMARY
+================================================================================
+
+Total commits analyzed: 31
+Total security issues found: 4
+
+⚠️  SECURITY ISSUES DETECTED - REVIEW REQUIRED
+
+Critical issues: 0
+High severity issues: 2
+
+================================================================================
+END OF REPORT
+================================================================================

