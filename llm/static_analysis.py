@@ -177,7 +177,8 @@ class StaticAnalyzer:
     
     def analyze_commits(self, repository, commit_shas: List[str]) -> Dict:
         """
-        Analyze a list of commits for security issues
+        Analyze a list of commits for security issues.
+        Analysis is performed per-file for each commit diff.
         
         Args:
             repository: Repository object from pre_analysis
@@ -196,34 +197,84 @@ class StaticAnalyzer:
             print(f"  Analyzing commit {idx}/{len(commit_shas)}: {sha[:8]}...")
             
             try:
-                # Get commit metadata and diff
+                # Get commit metadata
                 metadata = repository.get_commit_metadata(sha)
                 changes = repository.get_file_changes(sha)
-                diff = repository.get_commit_diff(sha)
+                full_diff = repository.get_commit_diff(sha) # Still get full diff for pattern scanning context or import analysis if needed?
+                # Actually import analysis currently runs on 'diff'. It might be better to run it per file too, 
+                # but for now let's keep pattern scanning on the full diff or per file?
+                # The prompt asks for "generate multiple requests for each file diff inside static analysis".
+                # Let's do per-file analysis for the LLM part.
                 
-                # Analyze imports
-                self._analyze_imports(sha, diff)
+                # Analyze imports (global for commit for now)
+                self._analyze_imports(sha, full_diff)
                 
-                # Pattern-based detection (fast)
-                suspicious_patterns = self._detect_suspicious_patterns(sha, diff)
+                # Pattern-based detection (fast - global)
+                suspicious_patterns_global = self._detect_suspicious_patterns(sha, full_diff)
                 
-                # Check for obfuscation and apply deobfuscation if needed
-                if 'obfuscation' in suspicious_patterns:
-                    logger.info(f"    ⚠️  Obfuscation detected in {sha[:8]}, attempting deobfuscation...")
-                    # We deobfuscate the diff (or specific parts if we could parse)
-                    # For now, we deobfuscate the whole diff string which might be messy, 
-                    # ideally we deobfuscate the added lines. But lets try passing it all.
-                    deobfuscated_diff = self._deobfuscate_code(diff)
-                    if deobfuscated_diff != diff:
-                         diff = deobfuscated_diff
-                         logger.info(f"    ✨ Deobfuscation successful (modified content)")
+                # If no changes, skip
+                if not changes:
+                    continue
+
+                print(f"    - Found {len(changes)} changed files in {sha[:8]}")
+
+                # Process each file
+                # Ideally we parallelize this if there are many files in one commit? 
+                # `_llm_analyze_commit_with_chunking` logic might need adjustment.
+                # Let's call a modified version or just iterate.
                 
-                # LLM-based deep analysis (for commits with changes or suspicious patterns)
-                if changes or suspicious_patterns:
-                    self._llm_analyze_commit_with_chunking(sha, metadata, changes, diff, suspicious_patterns)
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+                
+                # We can reuse the thread pool if we want parallel files analysis
+                with ThreadPoolExecutor(max_workers=self.concurrent_threads) as executor:
+                    futures = []
                     
+                    for change in changes:
+                        filename = change.filename
+                        if change.status == 'D': # Deleted
+                            continue
+                            
+                        # Get specific file diff
+                        file_diff = repository.get_file_diff(sha, filename)
+                        if not file_diff or not file_diff.strip():
+                            continue
+                            
+                        # Pattern detection for this file specifically? 
+                        # We passed global patterns before. Let's enable LLM analysis for *this file*.
+                        
+                        # We need to adapt _llm_analyze_commit_with_chunking to take file_diff
+                        # and maybe file path context.
+                        
+                        # Check obfuscation
+                        if 'obfuscation' in suspicious_patterns_global:
+                             # Try deobfuscate this file
+                             deobf = self._deobfuscate_code(file_diff)
+                             if deobf != file_diff:
+                                 file_diff = deobf
+                        
+                        # Schedule analysis
+                        futures.append(executor.submit(
+                            self._llm_analyze_commit_with_chunking,
+                            sha,
+                            metadata,
+                            [change], # Pass just this change for context
+                            file_diff,
+                            suspicious_patterns_global, # Pass global patterns? Or should we find patterns in this file?
+                            # Let's pass global patterns for context, LLM can see if they apply.
+                            filename # New arg for context
+                        ))
+                    
+                    # Wait for completion
+                    for future in as_completed(futures):
+                        try:
+                            future.result()
+                        except Exception as e:
+                            print(f"    ⚠️  Error analyzing file in {sha[:8]}: {e}")
+
             except Exception as e:
                 print(f"    ⚠️  Error analyzing commit {sha[:8]}: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
         
         print(f"✅ Static analysis complete. Found {len(self.issues)} issues.\n")
@@ -359,13 +410,14 @@ class StaticAnalyzer:
         metadata,
         changes: List,
         diff: str,
-        suspicious_patterns: Dict[str, List[str]]
+        suspicious_patterns: Dict[str, List[str]],
+        filename: str = None
     ) -> None:
-        """Analyze commit with automatic parallel chunking for large diffs"""
+        """Analyze commit (or specific file) with automatic parallel chunking for large diffs"""
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
         # Prepare base context (without diff)
-        base_context = self._prepare_base_context(commit_sha, metadata, changes, suspicious_patterns)
+        base_context = self._prepare_base_context(commit_sha, metadata, changes, suspicious_patterns, filename)
         base_tokens = self._count_tokens(base_context)
         
         # Calculate available tokens for diff
@@ -418,7 +470,8 @@ class StaticAnalyzer:
         commit_sha: str,
         metadata,
         changes: List,
-        suspicious_patterns: Dict[str, List[str]]
+        suspicious_patterns: Dict[str, List[str]],
+        filename: str = None
     ) -> str:
         """Prepare base context without diff"""
         context_parts = [
@@ -426,8 +479,14 @@ class StaticAnalyzer:
             f"Author: {metadata.author_name} <{metadata.author_email}>",
             f"Date: {metadata.date}",
             f"Message: {metadata.message}",
-            f"\nFiles changed: {len(changes)}"
         ]
+        
+        if filename:
+             context_parts.append(f"\nAnalyzing specific file: {filename}")
+             # We can still list other files changed for context if we want
+             context_parts.append(f"Total files changed in commit: {len(changes)}")
+        else:
+             context_parts.append(f"\nFiles changed: {len(changes)}")
         
         for change in changes[:10]:  # Show more files now
             context_parts.append(
@@ -439,7 +498,7 @@ class StaticAnalyzer:
             context_parts.append(f"  ... and {len(changes) - 10} more files")
         
         if suspicious_patterns:
-            context_parts.append("\nSuspicious patterns detected:")
+            context_parts.append("\nSuspicious patterns detected (in full commit):")
             for category, matches in suspicious_patterns.items():
                 context_parts.append(f"  - {category}: {', '.join(matches[:5])}")
         

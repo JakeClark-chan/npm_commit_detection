@@ -167,6 +167,14 @@ class Repository:
         """Get the full diff for a commit"""
         return self._run_git("show", commit_sha)
     
+    def get_file_diff(self, commit_sha: str, filename: str) -> str:
+        """Get diff for a specific file in a commit"""
+        try:
+            return self._run_git("show", f"{commit_sha}", "--", filename)
+        except Exception:
+            # File might be deleted or other issue
+            return ""
+    
     def get_commits_for_tag(self, tag: str, previous_tag: Optional[str] = None) -> List[str]:
         """Get list of commit SHAs between tags or up to a tag"""
         if previous_tag:

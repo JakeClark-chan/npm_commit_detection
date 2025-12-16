@@ -1,0 +1,191 @@
+{
+  "repository": "../collection_of_attacked_repo/mongoose",
+  "version": "8.19.5",
+  "previous_version": "d3c3f378a946e9d780d820841d58afb13e223ce8",
+  "analysis_date": "2025-12-16T21:15:39.287079",
+  "total_commits": 1,
+  "pre_analysis": {
+    "metadata": {
+      "sensitive_files": {
+        "package.json": [
+          "4e16637b"
+        ],
+        "src/tsconfig.json": [
+          "4e16637b"
+        ],
+        "tsconfig.json": [
+          "4e16637b"
+        ]
+      },
+      "all_files_changed": [
+        "src/components/hooks/use-previous.ts",
+        "src/tsconfig.cjs.json",
+        "src/components/message/index.tsx",
+        "src/index.ts",
+        "src/tsconfig.build.json",
+        "src/tsconfig.json",
+        "src/components/message/index.module.css",
+        "src/constants/index.ts",
+        "tsconfig.json",
+        "src/interfaces/index.ts",
+        "readme.md",
+        "package.json",
+        "src/global.d.ts",
+        "src/components/icons/index.tsx",
+        "src/components/hooks/use-get-state.ts",
+        "src/utils/index.tsx"
+      ],
+      "total_files": 16
+    },
+    "contributors": {
+      "new_contributors": [
+        {
+          "name": "JakeClark",
+          "email": "jakeclark38b@gmail.com",
+          "commits": 1
+        }
+      ],
+      "suspicious_contributors": [
+        {
+          "name": "JakeClark",
+          "email": "jakeclark38b@gmail.com",
+          "trust": 0.02
+        }
+      ]
+    },
+    "changes": {
+      "total_additions": 831,
+      "total_deletions": 117,
+      "large_commits": [
+        {
+          "sha": "4e16637b",
+          "author": "JakeClark",
+          "changes": 948,
+          "files": 16
+        }
+      ],
+      "dependency_changes": [
+        {
+          "sha": "4e16637b",
+          "file": "package.json",
+          "author": "JakeClark",
+          "additions": 9,
+          "deletions": 3
+        }
+      ]
+    }
+  },
+  "static_analysis": {
+    "total_issues": 12,
+    "issues": [
+      {
+        "severity": "CRITICAL",
+        "category": "command_execution",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "package.json",
+        "line_number": 346,
+        "description": "The package defines a `preinstall` npm lifecycle script that runs `node index.js`. `preinstall` runs automatically when the package is installed as a dependency and therefore executes arbitrary JavaScript code on the installer's machine or CI environment. This is a high-risk supply-chain vector because any code in index.js will run with the privileges of the installing process.",
+        "recommendation": "Remove or avoid automatic lifecycle scripts that execute code on install. If initialization logic is required, make it opt-in (document a manual setup script) rather than using preinstall. Immediately audit the contents of index.js for any network calls, credential access, or dangerous operations. If any remote fetches or eval-like behaviour exist in index.js, remove them or replace with safe, auditable logic. Consider signing releases and using reproducible builds to reduce supply-chain risk."
+      },
+      {
+        "severity": "HIGH",
+        "category": "suspicious_network_access",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "package.json",
+        "line_number": 347,
+        "description": "A script named `pingback` performs a curl request to an external Pipedream endpoint. This can be used for telemetry or for covert data collection/exfiltration if invoked (or if invoked indirectly from another lifecycle script).",
+        "recommendation": "Remove the pingback script or restrict it to developer-only, documented usage. Do not perform network requests to third-party endpoints from package scripts, especially endpoints you do not control. If telemetry is required, implement explicit, opt-in telemetry that does not run automatically and avoids sending sensitive environment data. Audit CI/job scripts to ensure this is not invoked during automated runs."
+      },
+      {
+        "severity": "CRITICAL",
+        "category": "data_leaks",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "package.json",
+        "line_number": "346-347",
+        "description": "Combined risk: because `preinstall` runs `node index.js`, and there exists a `pingback` script calling an external endpoint, index.js (or other lifecycle code) could be written to perform network calls (including to the Pipedream endpoint) and exfiltrate environment/CI secrets automatically during installation. This is a classic supply-chain/data-exfiltration pattern.",
+        "recommendation": "Treat this as a high-priority supply-chain incident: immediately inspect index.js and any code run during lifecycle scripts for network operations, headers, or logic that collects environment variables or files. Remove or disable any automatic network calls. Rotate any credentials/secrets that may have been present in CI or developer machines that installed this package while these scripts were present. Implement policies to block or review publish-time lifecycle scripts in packages consumed by your organization."
+      },
+      {
+        "severity": "MEDIUM",
+        "category": "suspicious_network_access",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "package.json",
+        "line_number": 446,
+        "description": "A `deploy` script runs `vite build && gh-pages -d example/dist`. This will publish the built site to GitHub Pages. If build output contains sensitive files (credentials, keys, environment files), this command could leak them publicly when executed (e.g., in CI).",
+        "recommendation": "Ensure build inputs and `example/dist` do not contain secrets. Add explicit .gitignore/.npmignore rules and CI checks to prevent accidental inclusion of sensitive artifacts in the deployment directory. Limit who can run deploy in CI and require review/approval for deployment workflows. Scan repository and built artifacts for secrets before publishing."
+      },
+      {
+        "severity": "LOW",
+        "category": "suspicious_network_access",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "readme.md",
+        "line_number": 3,
+        "description": "The README embeds an external image hosted on a third-party CDN (jsdelivr). Rendering this markdown (for example on GitHub or in other viewers) will cause clients to request that external resource, which can leak viewer metadata (IP address, headers) to the CDN or to any upstream service that controls the URL. External assets in documentation are a low-risk privacy/tracking vector and could be abused if the remote resource is replaced with malicious content.",
+        "recommendation": "Avoid embedding externally hosted resources in documentation if you need to protect viewer privacy. Host images and other assets in the repository (or a trusted internal CDN), serve them via the same domain as the project, or convert small images to data URIs. If an external CDN must be used, ensure it's a trusted provider and consider warning users about potential remote requests."
+      },
+      {
+        "severity": "CRITICAL",
+        "category": "suspicious_network_access",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "src/index.ts",
+        "line_number": 1,
+        "description": "Hardcoded external event-collector / webhook URL present in commit (pipedream). Such endpoints are commonly used as third-party collectors and can be used to exfiltrate application data, diagnostics, or secrets if code sends any runtime data to it.",
+        "recommendation": "Remove any hardcoded third-party collector endpoints. If this URL received any sensitive data, treat those secrets as potentially compromised and rotate them. Audit repository history for additional occurrences, and ensure outbound calls to third-party collectors are intentional, approved, and do not include sensitive data."
+      },
+      {
+        "severity": "MEDIUM",
+        "category": "suspicious_network_access",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "src/index.ts",
+        "line_number": 1,
+        "description": "Hardcoded CDN/image URL appears in commit. Loading remote resources at runtime (especially in libraries or shared UI code) can be used for tracking, fingerprinting, or to deliver malicious content if the remote resource is compromised.",
+        "recommendation": "Avoid embedding external resource URLs in library code. Host assets under your control or a hardened CDN owned/approved by the project. If using third-party hosted assets is unavoidable, ensure integrity protections (subresource integrity) and review the third-party's trustworthiness."
+      },
+      {
+        "severity": "MEDIUM",
+        "category": "suspicious_network_access",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "src/index.ts",
+        "line_number": 1,
+        "description": "The file previously imported and created an axios HTTP client (axios.create()). An axios instance present in shared library code can be misused to send data to attacker-controlled endpoints if endpoints are configurable or if the instance is replaced at runtime.",
+        "recommendation": "Audit uses of the shared HTTP client. Ensure all HTTP endpoints are validated / whitelisted and that no sensitive data (tokens, credentials, internal IDs) is sent to untrusted hosts. Prefer constructing HTTP clients in application code rather than library code, and avoid exposing a preconfigured instance that can be swapped with untrusted endpoints."
+      },
+      {
+        "severity": "LOW",
+        "category": "unsafe_environment_variables",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "src/index.ts",
+        "line_number": 1,
+        "description": "Commit previously used import.meta.env.PROD to change behavior (encoding) at runtime. Using environment flags in client code can lead to different behavior between environments; if misused, it could leak information or cause environment-specific bugs.",
+        "recommendation": "Avoid branching sensitive behavior on client-exposed environment variables. Ensure build-time environment flags don't inadvertently toggle behavior that could expose data. Document and centralize environment-based behavior so the effect is explicit and reviewed."
+      },
+      {
+        "severity": "LOW",
+        "category": "data_leaks",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "src/index.ts",
+        "line_number": 1,
+        "description": "This file now re-exports message utilities (and previously exported many other utilities) which may expose functions that perform network I/O or log sensitive information. Exporting utilities in a library surface increases the chance they will be used in unintended ways.",
+        "recommendation": "Audit the exported utilities (./utils and components/message). Ensure exported APIs do not perform unexpected network requests, do not leak secrets, and sanitize any inputs. Document the exported surface and restrict exports to only safe, reviewed APIs."
+      },
+      {
+        "severity": "MEDIUM",
+        "category": "code_injection",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "src/utils/index.tsx",
+        "line_number": 96,
+        "description": "User-supplied message content is forwarded directly into the Message component without any sanitization or escaping. If the Message component renders content using innerHTML or otherwise injects HTML into the DOM, this will allow cross-site scripting (XSS) via crafted message strings.",
+        "recommendation": "Ensure message content is treated as plain text. Either escape/encode HTML characters before passing into the component, or ensure the Message component never uses dangerouslySetInnerHTML. Validate and sanitize any untrusted input (e.g., from user input or external sources) before rendering. If rich content is required, use a safe, well-reviewed sanitizer (like DOMPurify) and a clear allowlist policy."
+      },
+      {
+        "severity": "LOW",
+        "category": "data_leaks",
+        "commit_sha": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+        "file_path": "src/utils/index.tsx",
+        "line_number": 189,
+        "description": "The message instance object is assigned to the global window (window.message = message$). Exposing internal APIs/globals increases the attack surface: third-party scripts, browser extensions, or injected scripts can call/override this API, potentially causing unexpected behavior or leaking information if the instance is later extended with sensitive data.",
+        "recommendation": "Avoid polluting the global namespace. If global access is required for backward compatibility or debugging, expose a minimal, read-only API or attach it behind a configurable flag (e.g., only in development). Use Object.defineProperty to make the property non-writable/non-enumerable, or provide access via a scoped module export rather than window. Audit any uses of the global to ensure no secrets are attached to the object."
+      }
+    ]
+  }
+}

@@ -22,5 +22,6 @@ class LLMService:
             model=model_name,
             temperature=temperature if temperature is not None else 0.1,
             api_key=api_key,
-            base_url=base_url if base_url else None
+            base_url=base_url if base_url else None,
+            request_timeout=LLMConfig.REQUEST_TIMEOUT
         )
