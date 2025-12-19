@@ -36,7 +36,7 @@ class LLMService:
                 "provider": {
                     "order": LLMConfig.OPENROUTER_PROVIDER_ORDER,
                     "allow_fallbacks": LLMConfig.OPENROUTER_ALLOW_FALLBACKS,
-                    "sort": "throughput" if LLMConfig.OPENROUTER_SORT_BY_THROUGHPUT else "latency"
+                    "sort": LLMConfig.OPENROUTER_SORT_BY
                 }
             }
             

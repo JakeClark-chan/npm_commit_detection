@@ -25,7 +25,7 @@ class LLMConfig(BaseConfig):
     OPENROUTER_ALLOW_FALLBACKS = False
 
     # Sort by throughput
-    OPENROUTER_SORT_BY_THROUGHPUT = True
+    OPENROUTER_SORT_BY = "throughput"
 
     LLM_USE_OPENROUTER = BaseConfig.get_env("LLM_USE_OPENROUTER", "true").lower() == "true"
     
