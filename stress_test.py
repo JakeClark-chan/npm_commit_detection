@@ -10,16 +10,15 @@ import requests
 import requests
 import glob
 import argparse
-import contextlib
-import io
+import logging
 from tqdm import tqdm
 import statistics
-
+import logging
 load_dotenv()
-
+logger = logging.getLogger(__name__)
 # Set up environment variables
 os.environ["LANGCHAIN_TRACING_V2"] = "false" # Force disable to prevent rate limits
-os.environ["CONCURRENT_THREADS"] = "4" # Ensure this is set before imports
+os.environ["CONCURRENT_THREADS"] = "8" # Ensure this is set before imports
 
 # Import our tools
 sys.path.append(os.getcwd())
@@ -38,6 +37,27 @@ PREV_TAG = "8.19.4"
 PREDICTED_COMMITS_FILE = "predicted_commits.json"
 REPORT_FILE = "stress_test_report.md"
 
+def recalculate_empty_dynamic(num_commits):
+    """Recalculate empty dynamic count from actual report files"""
+    report_files = glob.glob('reports/dynamic_report_*.json')
+    report_files.sort(key=os.path.getmtime, reverse=True)
+    latest_reports = report_files[:num_commits]
+    
+    empty_count = 0
+    for report_path in latest_reports:
+        try:
+            with open(report_path, 'r') as f:
+                data = json.load(f)
+            
+            # Case 1: "status": "finished" and "result": []
+            if data.get('status') == 'finished' and isinstance(data.get('result'), list) and not data.get('result'):
+                empty_count += 1
+            # Case 2: Generic error or empty dict
+            elif not data or 'error' in data:
+                empty_count += 1
+        except Exception:
+            empty_count += 1  # Count read errors as empty
+    
     return empty_count
 
 def calculate_accuracy_metrics(predictions):
@@ -91,8 +111,8 @@ def calculate_accuracy_metrics(predictions):
             "missing": missing, "unknown": unknown, "total_eval": total_eval
         }
     except Exception as e:
-        print(f"Error checking accuracy: {e}")
-        return None
+        logger.error(f"Error checking accuracy: {e}")
+        return {}
 
 def calculate_timing_stats(timings):
     """Calculate statistics from timings list"""
@@ -141,7 +161,7 @@ def get_commits(repo_path, from_tag, to_tag):
         commits = result.stdout.strip().split('\n')
         return [c.strip() for c in commits if c.strip()]
     except subprocess.CalledProcessError as e:
-        print(f"Error getting commits: {e}")
+        logger.error(f"Error getting commits: {e}")
         return []
 
 def cleanup_repo(repo_path):
@@ -151,7 +171,7 @@ def cleanup_repo(repo_path):
         subprocess.run(["git", "-C", repo_path, "reset", "--hard"], check=False, capture_output=True)
         subprocess.run(["git", "-C", repo_path, "clean", "-fd"], check=False, capture_output=True)
     except Exception as e:
-        print(f"Warning: Failed to cleanup repo: {e}")
+        logger.warning(f"Warning: Failed to cleanup repo: {e}")
 
 def simple_verification(commit_sha, static_json, dynamic_json):
     """Legacy simple verification - single LLM call"""
@@ -192,7 +212,7 @@ def simple_verification(commit_sha, static_json, dynamic_json):
     
     try:
         response = llm.invoke(messages)
-        content = response.content.strip()
+        content = (response.content or "").strip()
         
         # Remove markdown code blocks if present
         if content.startswith("```json"):
@@ -243,7 +263,7 @@ def simple_verification(commit_sha, static_json, dynamic_json):
         return verdict, explanation
 
     except Exception as e:
-        print(f"LLM invocation failed: {e}")
+        logger.error(f"LLM invocation failed: {e}")
         return "unknown", f"Analysis failed: {e}"
 
 def advanced_verification(commit_sha, static_output, dynamic_report_path):
@@ -283,7 +303,8 @@ def advanced_verification(commit_sha, static_output, dynamic_report_path):
         return "benign", result
         
     except Exception as e:
-        print(f"  Advanced verification failed: {e}")
+        logger.error(f"  Advanced verification failed: {e}")
+        # Fallback
         import traceback
         traceback.print_exc()
         return "unknown", None
@@ -340,19 +361,28 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
     args = parser.parse_args()
 
+    
+    # Reconfigure logging level based on args
+    if not args.verbose:
+        logging.getLogger().setLevel(logging.ERROR)
+        
+    # Silence noisy libraries
+    logging.getLogger("httpx").setLevel(logging.ERROR)
+    logging.getLogger("httpcore").setLevel(logging.ERROR)
+    logging.getLogger("openai").setLevel(logging.ERROR)
+
     abs_repo_path = Path(REPO_PATH).resolve()
-    if args.verbose:
-        print(f"Target Repo: {abs_repo_path}")
+    logger.info(f"Target Repo: {abs_repo_path}")
     
     # Ensure clean state before starting
     cleanup_repo(str(abs_repo_path))
     
     commits = get_commits(str(abs_repo_path), PREV_TAG, VERSION_TAG)
     if args.verbose:
-        print(f"Found {len(commits)} commits to analyze between {PREV_TAG} and {VERSION_TAG}.")
+        logger.info(f"Found {len(commits)} commits to analyze between {PREV_TAG} and {VERSION_TAG}.")
     
     if not commits:
-        print("No commits found.")
+        logger.error("No commits found.")
         return
         
     predictions = []
@@ -379,13 +409,9 @@ def main():
 
     for i, commit in commit_iter:
         if args.verbose:
-            print(f"\n[{i+1}/{len(commits)}] Processing commit {commit[:8]}...")
+            logger.info(f"[{i+1}/{len(commits)}] Processing commit {commit[:8]}...")
             
-        # Context manager to suppress output if not verbose
-        cm = contextlib.nullcontext() if args.verbose else contextlib.redirect_stdout(io.StringIO())
-        
-        with cm:
-            # Ensure clean state before each dynamic analysis checkout attempt
+        # Ensure clean state before each dynamic analysis checkout attempt
         cleanup_repo(str(abs_repo_path))
         
         static_res = {}
@@ -396,37 +422,33 @@ def main():
         
         # STATIC ANALYSIS
         try:
-            print("  Running Static Analysis...")
+            logger.info("Running Static Analysis...")
             static_start = time.time()
             static_output = static_analyzer.analyze_commits(repo, [commit])
             
-            # Extract timings if available, else calc fallback
+            # Extract timings
             commit_timings = static_output.get('timings', {}).get(commit, {'pre_analysis': 0.0, 'static_analysis': time.time() - static_start})
             
             issues_list = []
             if 'all_issues' in static_output:
                 for issue in static_output['all_issues']:
-                    issues_list.append({
-                        'severity': issue.severity,
-                        'category': issue.category,
-                        'description': issue.description,
-                        'file_path': issue.file_path,
-                        'recommendation': issue.recommendation
-                    })
+                    issues_list.append((str(issue.category), str(issue.severity)))
+                    
+            logger.info(f"Static analysis complete. Issues: {len(issues_list)}")
             
             static_res = {
                 'total_issues': static_output.get('total_issues', 0),
-                'issues': issues_list
+                'issues': issues_list # Simplified for now as full object passed to verify
             }
         except Exception as e:
-            print(f"  Static analysis failed: {e}")
+            logger.error(f"Static analysis failed: {e}")
             stats["failed_requests"] += 1
             analysis_failed = True
             commit_timings = {'pre_analysis': 0.0, 'static_analysis': 0.0}
 
         # DYNAMIC ANALYSIS
         try:
-            print("  Running Dynamic Analysis...")
+            logger.info("Running Dynamic Analysis...")
             dynamic_start = time.time()
             report_path = dynamic_analyzer.analyze(str(abs_repo_path), commit)
             dynamic_duration = time.time() - dynamic_start
@@ -436,16 +458,15 @@ def main():
                     dynamic_res = json.load(f)
                 
                 # Check for empty result specifically
-                # Example: {"status": "finished", "id": "...", "result": []}
                 if dynamic_res.get('status') == 'finished' and isinstance(dynamic_res.get('result'), list) and not dynamic_res.get('result'):
-                    print("  Dynamic analysis finished with empty result (no findings).")
+                    logger.info("Dynamic analysis finished with empty result (no findings).")
                     stats["empty_dynamic"] += 1
             else:
-                print("  Dynamic analysis returned no report.")
+                logger.warning("Dynamic analysis returned no report.")
                 stats["empty_dynamic"] += 1
                 dynamic_res = {"error": "No report generated"}
         except Exception as e:
-            print(f"  Dynamic analysis failed: {e}")
+            logger.error(f"Dynamic analysis failed: {e}")
             stats["failed_requests"] += 1
             analysis_failed = True
             dynamic_duration = 0.0
@@ -453,13 +474,13 @@ def main():
         if analysis_failed:
             stats["failed_commits"] += 1
         
-        # Verification (using advanced multi-tool correlation)
-        print("  Running Advanced Verification...")
+        # Verification
+        logger.info("Running Simple Verification...")
         verification_start = time.time()
         verification_duration = 0.0
         try:
             # Use simple verification as requested (more robust/consistent for USER)
-            prediction, explanation = simple_verification(commit, static_output, dynamic_res)
+            prediction, explanation = simple_verification(commit, static_res, dynamic_res)
             verification_duration = time.time() - verification_start
             
             label = "unknown"
@@ -476,10 +497,11 @@ def main():
                 "predict": label,
                 "explanation": explanation
             })
-            print(f"  Result: {label.upper()}")
+
+            logger.info(f"Verification Result: {label.upper()}")
             
         except Exception as e:
-            print(f"  Verification failed: {e}")
+            logger.error(f"Verification failed: {e}")
             verification_duration = time.time() - verification_start
             stats["failed_requests"] += 1
         
@@ -556,7 +578,7 @@ def main():
             else:
                 f.write("No detailed explanation available.\n\n")
     
-    print(f"Saved report to {REPORT_FILE}")
+    logger.info(f"Saved report to {REPORT_FILE}")
 
 if __name__ == "__main__":
     main()

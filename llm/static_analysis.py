@@ -190,8 +190,13 @@ class StaticAnalyzer:
         self.issues.clear()
         self.import_analyses.clear()
         
-        print(f"\n🔍 Starting static analysis of {len(commit_shas)} commits...")
-        print(f"   ⚙️  Configuration: {self.concurrent_threads} threads, Model: {self.model_name}")
+        self.issues.clear()
+        self.import_analyses.clear()
+        
+        logger.info(f"🔍 Starting static analysis of {len(commit_shas)} commits...")
+        logger.info(f"   ⚙️  Configuration: {self.concurrent_threads} threads, Model: {self.model_name}")
+        
+        # Define ignored extensions and directories - Adjusted based on user feedback to keep scripts/configs
         
         # Define ignored extensions and directories - Adjusted based on user feedback to keep scripts/configs
         IGNORED_EXTENSIONS = {
@@ -223,7 +228,7 @@ class StaticAnalyzer:
         timings = {} # sha -> {pre_analysis: float, static_analysis: float}
 
         for idx, sha in enumerate(commit_shas, 1):
-            print(f"  Analyzing commit {idx}/{len(commit_shas)}: {sha[:8]}...")
+            logger.info(f"  Analyzing commit {idx}/{len(commit_shas)}: {sha[:8]}...")
             
             commit_start_time = time.time()
             pre_analysis_start = time.time()
@@ -244,7 +249,13 @@ class StaticAnalyzer:
                     timings[sha] = {'pre_analysis': time.time() - pre_analysis_start, 'static_analysis': 0.0}
                     continue
 
-                print(f"    - Found {len(changes)} changed files in {sha[:8]}")
+                if not changes:
+                    timings[sha] = {'pre_analysis': time.time() - pre_analysis_start, 'static_analysis': 0.0}
+                    continue
+
+                logger.info(f"    - Found {len(changes)} changed files in {sha[:8]}")
+
+                # 1. FILTER & SCORE FILES
 
                 # 1. FILTER & SCORE FILES
                 scored_files = []
@@ -285,12 +296,15 @@ class StaticAnalyzer:
                 pre_analysis_end = time.time()
                 pre_duration = pre_analysis_end - pre_analysis_start
                 
+                
                 if not top_files:
-                    print("    - No risky files found to analyze after filtering.")
+                    logger.info("    - No risky files found to analyze after filtering.")
                     timings[sha] = {'pre_analysis': pre_duration, 'static_analysis': 0.0}
                     continue
                     
-                print(f"    - Selected top {len(top_files)} files (Time: {pre_duration:.2f}s, Risk: {', '.join(str(f['score']) for f in top_files)})")
+                logger.info(f"    - Selected top {len(top_files)} files (Time: {pre_duration:.2f}s, Risk: {', '.join(str(f['score']) for f in top_files)})")
+                
+                # 3. PREPARE CONSOLIDATED DIFF
                 
                 # 3. PREPARE CONSOLIDATED DIFF
                 consolidated_diff_parts = []
@@ -304,7 +318,9 @@ class StaticAnalyzer:
                 
                 # 4. SINGLE LLM ANALYSIS
                 static_start = time.time()
-                print(f"    - Sending consolidated request ({self._count_tokens(final_consolidated_diff)} tokens)")
+                # 4. SINGLE LLM ANALYSIS
+                static_start = time.time()
+                logger.info(f"    - Sending consolidated request ({self._count_tokens(final_consolidated_diff)} tokens)")
                 
                 self._llm_analyze_commit(
                     sha,
@@ -319,13 +335,12 @@ class StaticAnalyzer:
                 timings[sha] = {'pre_analysis': pre_duration, 'static_analysis': static_duration}
 
             except Exception as e:
-                print(f"    ⚠️  Error analyzing commit {sha[:8]}: {e}")
+                logger.error(f"    ⚠️  Error analyzing commit {sha[:8]}: {e}")
                 timings[sha] = {'pre_analysis': time.time() - pre_analysis_start, 'static_analysis': 0.0}
-                import traceback
-                traceback.print_exc()
+                logger.exception("Traceback:")
                 continue
         
-        print(f"✅ Static analysis complete. Found {len(self.issues)} issues.\n")
+        logger.info(f"✅ Static analysis complete. Found {len(self.issues)} issues.")
         
         return {
             'total_issues': len(self.issues),
@@ -626,21 +641,21 @@ class StaticAnalyzer:
                     
                 # If parsing failed, retry with correction prompt
                 if attempt < self.max_retries - 1:
-                    print(f"    🔄 Retry {attempt + 1}/{self.max_retries - 1}: Invalid JSON format, retrying...")
+                    logger.info(f"    🔄 Retry {attempt + 1}/{self.max_retries - 1}: Invalid JSON format, retrying...")
                     user_prompt = prompts.JSON_RETRY_PROMPT_TEMPLATE.format(
                         chunk_info=chunk_info,
                         context=context
                     )
                     time.sleep(1)  # Brief delay before retry
                 else:
-                    print(f"    ❌ Failed after {self.max_retries} attempts for {commit_sha[:8]}{chunk_info}")
+                    logger.error(f"    ❌ Failed after {self.max_retries} attempts for {commit_sha[:8]}{chunk_info}")
                 
             except Exception as e:
                 if attempt < self.max_retries - 1:
-                    print(f"    🔄 Retry {attempt + 1}/{self.max_retries - 1}: Error {type(e).__name__}: {str(e)[:100]}")
+                    logger.info(f"    🔄 Retry {attempt + 1}/{self.max_retries - 1}: Error {type(e).__name__}: {str(e)[:100]}")
                     time.sleep(2 ** attempt)  # Exponential backoff
                 else:
-                    print(f"    ⚠️  LLM analysis error for {commit_sha[:8]}{chunk_info} after {self.max_retries} attempts: {e}")
+                    logger.error(f"    ⚠️  LLM analysis error for {commit_sha[:8]}{chunk_info} after {self.max_retries} attempts: {e}")
     
     def _resolve_file_path(self, code_snippet: str, diff: str) -> str:
         """Resolve file path from code snippet using the diff"""
@@ -721,13 +736,13 @@ class StaticAnalyzer:
             return True  # Parsing successful
                 
         except json.JSONDecodeError as e:
-            print(f"    ⚠️  JSON decode error for {commit_sha[:8]}: {e}")
+            logger.warning(f"    ⚠️  JSON decode error for {commit_sha[:8]}: {e}")
             return False
         except ValueError as e:
-            print(f"    ⚠️  Invalid response format for {commit_sha[:8]}: {e}")
+            logger.warning(f"    ⚠️  Invalid response format for {commit_sha[:8]}: {e}")
             return False
         except Exception as e:
-            print(f"    ⚠️  Error processing LLM response for {commit_sha[:8]}: {e}")
+            logger.error(f"    ⚠️  Error processing LLM response for {commit_sha[:8]}: {e}")
             return False
     
     def _categorize_by_severity(self) -> Dict[str, int]:

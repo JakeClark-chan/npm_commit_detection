@@ -8,6 +8,7 @@ import os
 import sys
 import json
 import time
+import logging
 import subprocess
 import requests
 from pathlib import Path
@@ -19,6 +20,10 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
 class DynamicAnalyzer:
@@ -68,8 +73,8 @@ class DynamicAnalyzer:
                     pass
                 return True
             return False
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Package Hunter server not available: {e}")
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"❌ Package Hunter server not available: {e}")
             return False
     
     def _npm_pack(self, repo_path: str, commit_hash: str) -> Optional[str]:
@@ -80,10 +85,10 @@ class DynamicAnalyzer:
         repo_path = Path(repo_path).resolve()
         
         if not repo_path.exists():
-            print(f"❌ Repository not found: {repo_path}")
+            logger.error(f"❌ Repository not found: {repo_path}")
             return None
         
-        print(f"📦 Preparing package at commit {commit_hash[:8]}...")
+        logger.info(f"📦 Preparing package at commit {commit_hash[:8]}...")
         
         try:
             # Checkout the specific commit
@@ -116,7 +121,7 @@ class DynamicAnalyzer:
             #             if '.npmrc' not in pkg_data['files']:
             #                 pkg_data['files'].append('.npmrc')
             #                 changed = True
-            #                 print("✅ Added .npmrc to package.json files list")
+            #                 logger.info("✅ Added .npmrc to package.json files list")
 
             #         # Upgrade React to 18
             #         for dep_type in ['dependencies', 'devDependencies']:
@@ -124,18 +129,18 @@ class DynamicAnalyzer:
             #                 if 'react' in pkg_data[dep_type]:
             #                     pkg_data[dep_type]['react'] = '^18.2.0'
             #                     changed = True
-            #                     print(f"✅ Updated react in {dep_type} to ^18.2.0")
+            #                     logger.info(f"✅ Updated react in {dep_type} to ^18.2.0")
             #                 if 'react-dom' in pkg_data[dep_type]:
             #                     pkg_data[dep_type]['react-dom'] = '^18.2.0'
             #                     changed = True
-            #                     print(f"✅ Updated react-dom in {dep_type} to ^18.2.0")
+            #                     logger.info(f"✅ Updated react-dom in {dep_type} to ^18.2.0")
 
             #         if changed:
             #             with open(pkg_json_path, 'w') as f:
             #                 json.dump(pkg_data, f, indent=2)
                             
             #     except Exception as e:
-            #         print(f"⚠️ Failed to update package.json: {e}")
+            #         logger.warning(f"⚠️ Failed to update package.json: {e}")
 
             # # 3. Remove package-lock.json if it exists
             # # This avoids strict version locking conflicts
@@ -152,28 +157,25 @@ class DynamicAnalyzer:
                 check=True
             )
             
-            # Extract .tgz filename from output
-            output_lines = result.stdout.strip().split('\n')
-            tgz_file = None
-            for line in output_lines:
-                if line.endswith('.tgz'):
-                    tgz_file = line.strip()
-                    break
-            
-            if not tgz_file:
-                print(f"❌ Could not find .tgz file in npm pack output")
+            # Find the .tgz file
+            tgz_files = list(repo_path.glob("*.tgz"))
+            if not tgz_files:
+                logger.error("❌ Could not find .tgz file in npm pack output")
                 return None
-            
-            tgz_path = repo_path / tgz_file
+                
+            tgz_path = tgz_files[0]
             if not tgz_path.exists():
-                print(f"❌ Package file not found: {tgz_path}")
+                logger.error(f"❌ Package file not found: {tgz_path}")
                 return None
-            
-            print(f"✅ Package created: {tgz_file}")
-            return str(tgz_path)
+                
+            logger.info(f"✅ Package created: {tgz_path.name}")
+            return tgz_path
             
         except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to create package: {e.stderr}")
+            logger.error(f"❌ Failed to create package: {e.stderr}")
+            return None
+        except Exception as e:
+            logger.error(f"❌ Error during npm pack: {e}")
             return None
     
     def _upload_package(self, tgz_path: str) -> Optional[str]:
@@ -181,36 +183,31 @@ class DynamicAnalyzer:
         Upload package to Package Hunter for analysis
         Returns analysis ID or None on failure
         """
-        print(f"📤 Uploading package to {self.package_hunter_url}...")
+        logger.info(f"📤 Uploading package to {self.package_hunter_url}...")
         
         try:
             with open(tgz_path, 'rb') as f:
-                response = requests.post(
-                    f"{self.package_hunter_url}/monitor/project/npm",
-                    data=f.read(),
-                    headers=self._get_headers('application/octet-stream'),
-                    timeout=30
-                )
-            
-            if response.status_code != 200:
-                print(f"❌ Upload failed with status {response.status_code}: {response.text}")
+                files = {'file': (Path(tgz_path).name, f, 'application/gzip')}
+                response = requests.post(f"{self.package_hunter_url}/analyze", files=files)
+                
+            if response.status_code == 200:
+                result = response.json()
+                analysis_id = result.get('id')
+                if not analysis_id:
+                    logger.error(f"❌ No analysis ID in response: {result}")
+                    return None
+                    
+                logger.info(f"✅ Package uploaded, analysis ID: {analysis_id}")
+                return analysis_id
+            else:
+                logger.error(f"❌ Upload failed with status {response.status_code}: {response.text}")
                 return None
-            
-            result = response.json()
-            analysis_id = result.get('id')
-            
-            if not analysis_id:
-                print(f"❌ No analysis ID in response: {result}")
-                return None
-            
-            print(f"✅ Package uploaded, analysis ID: {analysis_id}")
-            return analysis_id
-            
+                
         except requests.exceptions.RequestException as e:
-            print(f"❌ Upload request failed: {e}")
+            logger.error(f"❌ Upload request failed: {e}")
             return None
-        except json.JSONDecodeError as e:
-            print(f"❌ Invalid JSON response: {e}")
+        except ValueError as e:
+            logger.error(f"❌ Invalid JSON response: {e}")
             return None
     
     def _poll_results(self, analysis_id: str) -> Optional[Dict[str, Any]]:
@@ -218,65 +215,67 @@ class DynamicAnalyzer:
         Poll Package Hunter for analysis results
         Returns analysis results or None on failure/timeout
         """
-        print(f"⏳ Polling for results (ID: {analysis_id})...")
-        
+        logger.info(f"⏳ Polling for results (ID: {analysis_id})...")
         start_time = time.time()
         poll_count = 0
         
-        while True:
-            elapsed = time.time() - start_time
-            
-            if elapsed > self.timeout:
-                print(f"❌ Timeout after {self.timeout}s waiting for analysis")
-                return None
-            
+        while time.time() - start_time < self.timeout:
             try:
                 response = requests.get(
-                    f"{self.package_hunter_url}/?id={analysis_id}",
+                    f"{self.package_hunter_url}/result/{analysis_id}",
                     headers=self._get_headers(),
                     timeout=10
                 )
-                
-                if response.status_code != 200:
-                    print(f"❌ Poll failed with status {response.status_code}: {response.text}")
-                    return None
-                
-                result = response.json()
-                status = result.get('status')
-                
                 poll_count += 1
                 
-                if status == 'finished':
-                    print(f"✅ Analysis complete after {elapsed:.1f}s ({poll_count} polls)")
-                    return result
-                elif status == 'pending':
-                    print(f"   ⏳ Status: pending ({elapsed:.0f}s elapsed)...")
-                    time.sleep(self.poll_interval)
-                elif status == 'error':
-                    print(f"❌ Analysis failed: {result.get('message', 'Unknown error')}")
-                    return None
+                if response.status_code == 200:
+                    result = response.json()
+                    status = result.get('status')
+                    
+                    if status == 'finished':
+                        elapsed = time.time() - start_time
+                        logger.info(f"✅ Analysis complete after {elapsed:.1f}s ({poll_count} polls)")
+                        return result
+                    elif status == 'pending' or status == 'running':
+                        elapsed = time.time() - start_time
+                        if poll_count % 2 == 0: # Reduce log spam
+                            logger.info(f"   ⏳ Status: {status} ({elapsed:.0f}s elapsed)...")
+                        time.sleep(self.poll_interval)
+                    elif status == 'failed':
+                        logger.error(f"❌ Analysis failed: {result.get('message', 'Unknown error')}")
+                        return None
+                    else:
+                        logger.warning(f"⚠️  Unknown status: {status}")
+                        time.sleep(self.poll_interval)
                 else:
-                    print(f"⚠️  Unknown status: {status}")
-                    time.sleep(self.poll_interval)
+                    logger.error(f"❌ Poll failed with status {response.status_code}: {response.text}")
+                    return None
                     
             except requests.exceptions.RequestException as e:
-                print(f"❌ Poll request failed: {e}")
-                return None
+                logger.error(f"❌ Poll request failed: {e}")
+                time.sleep(self.poll_interval)
             except json.JSONDecodeError as e:
-                print(f"❌ Invalid JSON response: {e}")
-                return None
+                logger.error(f"❌ Invalid JSON response: {e}")
+                time.sleep(self.poll_interval)
+                
+        logger.error(f"❌ Timeout after {self.timeout}s waiting for analysis")
+        return None
     
     def _save_report(self, results: Dict[str, Any], commit_hash: str) -> str:
         """Save analysis results to JSON file"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"dynamic_report_{commit_hash[:8]}_{timestamp}.json"
-        filepath = self.reports_dir / filename
-        
-        with open(filepath, 'w') as f:
-            json.dump(results, f, indent=2)
-        
-        print(f"💾 Report saved: {filepath}")
-        return str(filepath)
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"dynamic_report_{commit_hash[:8]}_{timestamp}.json"
+            filepath = self.reports_dir / filename
+            
+            with open(filepath, 'w') as f:
+                json.dump(results, f, indent=2)
+            
+            logger.info(f"💾 Report saved: {filepath}")
+            return str(filepath)
+        except Exception as e:
+            logger.error(f"❌ Failed to save report: {e}")
+            return None
     
     def analyze(self, repo_path: str, commit_hash: str) -> Optional[str]:
         """

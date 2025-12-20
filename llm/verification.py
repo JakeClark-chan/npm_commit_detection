@@ -25,6 +25,11 @@ from configs.llm_config import LLMConfig
 from configs.dynamic_config import DynamicAnalysisConfig
 from llm.service import LLMService
 import prompts.verification_prompts as prompts
+import logging
+
+# Configure logging if run standalone
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -89,7 +94,7 @@ class DynamicAnalysisParser:
                 
             return []
         except Exception as e:
-            print(f"Error parsing dynamic log: {e}")
+            logger.error(f"Error parsing dynamic log: {e}")
             return []
 
 
@@ -107,7 +112,7 @@ class VerificationAnalyzer:
         # Let's use os.getenv for now for these specific overrides if they are not in main config yet.
         model_name = verification_model or os.getenv("LLM_VERIFICATION_MODEL", "gpt-4o-mini")
         temp = float(os.getenv("LLM_VERIFICATION_TEMPERATURE", "1"))
-        print(f"🤖 Initializing verification LLM: {model_name} (temperature={temp})")
+        logger.info(f"🤖 Initializing verification LLM: {model_name} (temperature={temp})")
         
         self.llm = LLMService.get_llm(
             model_name=model_name,
@@ -116,7 +121,7 @@ class VerificationAnalyzer:
     
     def normalize_static_findings(self, static_analysis: Dict) -> List[NormalizedFinding]:
         """Normalize static analysis findings to unified schema"""
-        print("🔄 Normalizing static analysis findings...")
+        logger.info("🔄 Normalizing static analysis findings...")
         
         normalized = []
         issues = static_analysis.get('static_analysis', {}).get('issues', [])
@@ -160,12 +165,12 @@ class VerificationAnalyzer:
             )
             normalized.append(finding)
         
-        print(f"   Normalized {len(normalized)} static findings")
+        logger.info(f"   Normalized {len(normalized)} static findings")
         return normalized
     
     def normalize_snyk_findings(self, snyk_analysis: Dict) -> List[NormalizedFinding]:
         """Normalize snyk analysis findings"""
-        print("🔄 Normalizing Snyk analysis findings...")
+        logger.info("🔄 Normalizing Snyk analysis findings...")
         
         normalized = []
         issues = snyk_analysis.get('issues', [])
@@ -184,16 +189,16 @@ class VerificationAnalyzer:
             )
             normalized.append(finding)
             
-        print(f"   Normalized {len(normalized)} Snyk findings")
+        logger.info(f"   Normalized {len(normalized)} Snyk findings")
         return normalized
 
     def normalize_dynamic_findings(self, dynamic_events: List[Dict]) -> List[NormalizedFinding]:
         """Normalize dynamic analysis findings to unified schema using LLM"""
-        print("🔄 Normalizing dynamic analysis findings...")
+        logger.info("🔄 Normalizing dynamic analysis findings...")
         
         # Group similar events to reduce noise
         grouped_events = self._group_similar_events(dynamic_events)
-        print(f"   Grouped {len(dynamic_events)} events into {len(grouped_events)} unique findings")
+        logger.info(f"   Grouped {len(dynamic_events)} events into {len(grouped_events)} unique findings")
         
         normalized = []
         for idx, event in enumerate(grouped_events):
@@ -213,7 +218,9 @@ class VerificationAnalyzer:
             )
             normalized.append(finding)
         
-        print(f"   Normalized {len(normalized)} dynamic findings")
+            normalized.append(finding)
+        
+        logger.info(f"   Normalized {len(normalized)} dynamic findings")
         return normalized
     
     def _group_similar_events(self, events: List[Dict]) -> List[Dict]:
@@ -263,25 +270,25 @@ class VerificationAnalyzer:
         
         If any pair matches on specific 'malicious' categories, flag as MALICIOUS.
         """
-        print("\n🔍 Verifying findings across all tools...")
+        logger.info("\n🔍 Verifying findings across all tools...")
         snyk_findings = snyk_findings or []
         
         result = VerificationResult()
         
         # 1. Compare Static vs Dynamic
-        print("   👉 Comparing Static <-> Dynamic...")
+        logger.info("   👉 Comparing Static <-> Dynamic...")
         matches_sd = self._match_findings_pair(static_findings, dynamic_findings, "Static", "Dynamic")
         result.static_dynamic_matches = matches_sd
         
         # 2. Compare Static vs Snyk
         if snyk_findings:
-            print("   👉 Comparing Static <-> Snyk...")
+            logger.info("   👉 Comparing Static <-> Snyk...")
             matches_ss = self._match_findings_pair(static_findings, snyk_findings, "Static", "Snyk")
             result.static_snyk_matches = matches_ss
         
         # 3. Compare Snyk vs Dynamic
         if snyk_findings and dynamic_findings:
-            print("   👉 Comparing Snyk <-> Dynamic...")
+            logger.info("   👉 Comparing Snyk <-> Dynamic...")
             matches_snykd = self._match_findings_pair(snyk_findings, dynamic_findings, "Snyk", "Dynamic")
             result.snyk_dynamic_matches = matches_snykd
             
@@ -320,7 +327,9 @@ class VerificationAnalyzer:
         result.is_malicious = False
         malicious_categories = ['code_injection', 'remote_code_execution', 'command_injection', 'reverse_shell', 'data_exfiltration', 'backdoor', 'malware']
         
-        print("\n   ⚖️  Evaluating matches for MALICIOUS verdict...")
+        malicious_categories = ['code_injection', 'remote_code_execution', 'command_injection', 'reverse_shell', 'data_exfiltration', 'backdoor', 'malware']
+        
+        logger.info("\n   ⚖️  Evaluating matches for MALICIOUS verdict...")
         for f1, f2 in all_matches:
             # Check if severity is High/Critical OR category is clearly malicious
             is_sev_high = f1.severity in ['HIGH', 'CRITICAL'] or f2.severity in ['HIGH', 'CRITICAL']
@@ -329,11 +338,11 @@ class VerificationAnalyzer:
             if is_sev_high or is_cat_mal:
                 result.is_malicious = True
                 result.malicious_confidence = 1.0
-                print(f"      🚨 MALICIOUS CONFIRMED by match: {f1.category} ({f1.source}) <-> {f2.category} ({f2.source})")
+                logger.warning(f"      🚨 MALICIOUS CONFIRMED by match: {f1.category} ({f1.source}) <-> {f2.category} ({f2.source})")
                 break
         
         if not result.is_malicious:
-             print("      ✅ No confirmed malicious pairs found.")
+             logger.info("      ✅ No confirmed malicious pairs found.")
 
         return result
 
@@ -380,10 +389,10 @@ class VerificationAnalyzer:
                      f_a.verification_status = "CONFIRMED"
                      f_b.verification_status = "CONFIRMED"
                      matches.append((f_a, f_b))
-                     print(f"      🔗 Match found: {f_a.category} <-> {f_b.category}")
+                     logger.info(f"      🔗 Match found: {f_a.category} <-> {f_b.category}")
 
         except Exception as e:
-            print(f"      ⚠️  Matching failed between {name_a} and {name_b}: {e}")
+            logger.error(f"      ⚠️  Matching failed between {name_a} and {name_b}: {e}")
             
         return matches
 
@@ -427,7 +436,7 @@ class VerificationAnalyzer:
         snyk_analysis: Optional[Dict] = None
     ) -> str:
         """Generate comprehensive verification report using LLM"""
-        print("\n📝 Generating comprehensive report...")
+        logger.info("\n📝 Generating comprehensive report...")
         
         # Prepare data for LLM
         confirmed_count = (
@@ -457,11 +466,16 @@ class VerificationAnalyzer:
                 HumanMessage(content=prompt)
             ])
             
+            response = self.llm.invoke([
+                SystemMessage(content=prompts.REPORT_SYSTEM_PROMPT),
+                HumanMessage(content=prompt)
+            ])
+            
             result.llm_analysis = response.content
-            print("✅ LLM analysis complete")
+            logger.info("✅ LLM analysis complete")
             
         except Exception as e:
-            print(f"⚠️  LLM report generation failed: {e}")
+            logger.error(f"⚠️  LLM report generation failed: {e}")
             result.llm_analysis = "LLM analysis unavailable."
         
         # Generate full report text
@@ -555,28 +569,33 @@ def verify_analysis(
     """
     Main verification function
     """
-    print("\n" + "=" * 100)
-    print("🔍 VERIFICATION ANALYSIS - MULTI-TOOL COMPARISON")
+    logger.info("\n" + "=" * 100)
+    logger.info("🔍 VERIFICATION ANALYSIS - MULTI-TOOL COMPARISON")
+    logger.info("=" * 100)
+    
+    # Load static analysis
+    
+    # Load static analysis
     print("=" * 100)
     
     # Load static analysis
-    print(f"\n📂 Loading static analysis: {static_analysis_json}")
+    logger.info(f"\n📂 Loading static analysis: {static_analysis_json}")
     with open(static_analysis_json, 'r') as f:
         static_analysis = json.load(f)
     
     # Parse dynamic analysis if provided
     dynamic_events = []
     if dynamic_analysis_log and os.path.exists(dynamic_analysis_log):
-        print(f"📂 Loading dynamic analysis: {dynamic_analysis_log}")
+        logger.info(f"📂 Loading dynamic analysis: {dynamic_analysis_log}")
         parser = DynamicAnalysisParser()
         dynamic_events = parser.parse_package_hunter_log(dynamic_analysis_log)
     else:
-        print("ℹ️  No dynamic analysis log provided or file not found. Skipping dynamic analysis integration.")
+        logger.info("ℹ️  No dynamic analysis log provided or file not found. Skipping dynamic analysis integration.")
     
     # Load Snyk analysis if provided
     snyk_analysis = {}
     if snyk_analysis_json and os.path.exists(snyk_analysis_json):
-        print(f"📂 Loading Snyk analysis: {snyk_analysis_json}")
+        logger.info(f"📂 Loading Snyk analysis: {snyk_analysis_json}")
         with open(snyk_analysis_json, 'r') as f:
              snyk_analysis = json.load(f)
     
@@ -604,8 +623,14 @@ def verify_analysis(
     with open(report_file, 'w') as f:
         f.write(report)
     
-    print(f"\n✅ Verification complete!")
-    print(f"📄 Report saved to: {report_file}")
+    # Save reports
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    report_file = os.path.join(reports_dir, f"verification_report_{timestamp}.md")
+    with open(report_file, 'w') as f:
+        f.write(report)
+    
+    logger.info(f"\n✅ Verification complete!")
+    logger.info(f"📄 Report saved to: {report_file}")
     
     return result
 
@@ -614,7 +639,7 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) < 3:
-        print("Usage: python verification.py <static.json> <dynamic.log> [output_dir] [snyk.json]")
+        logger.error("Usage: python verification.py <static.json> <dynamic.log> [output_dir] [snyk.json]")
         sys.exit(1)
     
     static_json = sys.argv[1]
@@ -624,8 +649,8 @@ if __name__ == "__main__":
     
     result = verify_analysis(static_json, dynamic_log, output_dir, snyk_json)
     
-    print(f"\n{'=' * 100}")
-    print("VERIFICATION SUMMARY")
-    print("=" * 100)
-    print(f"Verdict: {'🚨 MALICIOUS' if result.is_malicious else '✅ CLEAN/UNCONFIRMED'}")
+    logger.info(f"\n{'=' * 100}")
+    logger.info("VERIFICATION SUMMARY")
+    logger.info("=" * 100)
+    logger.info(f"Verdict: {'🚨 MALICIOUS' if result.is_malicious else '✅ CLEAN/UNCONFIRMED'}")
 

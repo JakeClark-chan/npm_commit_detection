@@ -1,0 +1,32 @@
+[
+  {
+    "hash": "4e16637bb6d3267e9966b52678ac31fa0c096e30",
+    "sample_folder": "mongoose",
+    "predict": "malware",
+    "explanation": "**At line None file package.json**:\nCode: `https://eo536ohsnextro9.m.pipedream.net`\nReason: The 'pingback' script makes an HTTP request to a potentially malicious or unknown endpoint, which could be used for data exfiltration or to trigger malicious actions.\n\n**Summary:** The commit is flagged as malware due to a critical issue identified in the static analysis, where the 'pingback' script makes an HTTP request to a potentially malicious endpoint."
+  },
+  {
+    "hash": "d3c3f378a946e9d780d820841d58afb13e223ce8",
+    "sample_folder": "mongoose",
+    "predict": "unknown",
+    "explanation": "Analysis failed: 'NoneType' object has no attribute 'strip'"
+  },
+  {
+    "hash": "aae3118a452965a886ed604e424f36bdae5ae619",
+    "sample_folder": "mongoose",
+    "predict": "malware",
+    "explanation": "**At line N/A file package.json**:\nCode: `zxcvbnmmmmmmkjhgfdssss`\nReason: The presence of a suspicious package 'zxcvbnmmmmmmkjhgfdssss' as a dependency is a strong indicator of potential malware, as it may be used for malicious activities or code injection.\n\n**At line N/A file components/index.js**:\nCode: `WalletIcon, WalletNewIcon`\nReason: The export of cryptocurrency-related icons could be used in the context of malicious activities, such as phishing or fraudulent schemes.\n\n**At line N/A file index.js**:\nCode: `WalletIcon, WalletNewIcon`\nReason: Similar to components/index.js, the export of these icons in index.js further supports the suspicion of potential malicious intent related to cryptocurrency.\n\n**Summary:** The presence of a critical severity issue related to a suspicious package dependency, along with the export of cryptocurrency-related icons, suggests that this commit is likely to be malware. The static analysis revealed potential red flags that were not mitigated by the dynamic analysis results."
+  },
+  {
+    "hash": "98b1e819573c66ac133f1019714b0a7a71660643",
+    "sample_folder": "mongoose",
+    "predict": "malware",
+    "explanation": "**At line N/A file index.js**:\nCode: `N/A`\nReason: The code is sending sensitive system information to an external server via HTTPS POST request and leaking sensitive system information.\n\n**At line N/A file package.json**:\nCode: `N/A`\nReason: The 'pingback' script is making an HTTP request to a suspicious domain and a suspicious package 'zxcvbnmmmmmmkjhgfdssss' is added as a dependency.\n\n**Summary:** The commit contains critical issues such as sending sensitive system information to an external server, leaking sensitive system information, and making requests to suspicious domains, indicating malicious behavior."
+  },
+  {
+    "hash": "a631ed877af9464c8ca0588772fdf55e5ce1d22d",
+    "sample_folder": "mongoose",
+    "predict": "malware",
+    "explanation": "**At line None file package.json**:\nCode: `nslookup operation in 'test' and 'preinstall' scripts`\nReason: The 'test' and 'preinstall' scripts perform nslookup operations that exfiltrate sensitive information (hostname and current working directory) to an external domain 'ex.sysdum.net', indicating potential data exfiltration.\n\n**At line None file package.json**:\nCode: `HTTP request in 'pingback' script`\nReason: The 'pingback' script makes an HTTP request to a potentially unknown or malicious endpoint 'https://eo536ohsnextro9.m.pipedream.net', which is suspicious and could be used for command and control or other malicious purposes.\n\n**Summary:** The commit is classified as malware due to the presence of suspicious network access patterns in the 'test', 'preinstall', and 'pingback' scripts within package.json, indicating potential data exfiltration and communication with unknown or malicious endpoints."
+  }
+]
