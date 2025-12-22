@@ -39,10 +39,15 @@ class LLMService:
                     "sort": LLMConfig.OPENROUTER_SORT_BY
                 }
             }
+
+            if LLMConfig.OPENROUTER_LLM_REASONING_ENABLE:
+                extra_body["reasoning"] = {
+                    "enabled": True
+                }
             
             return ChatOpenAI(
                 model=model_name,
-                temperature=temperature if temperature is not None else 0.1,
+                temperature=temperature if temperature is not None else 1,
                 api_key=api_key,
                 base_url=base_url,
                 request_timeout=LLMConfig.REQUEST_TIMEOUT,

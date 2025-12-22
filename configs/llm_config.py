@@ -14,15 +14,18 @@ class LLMConfig(BaseConfig):
     # Provider ordering (sorted by throughput: highest first)
     # These are passed as route=provider in OpenRouter requests
     OPENROUTER_PROVIDER_ORDER = [
-        "groq",
-        "deepinfra", 
-        "novita",
-        "hyperbolic",
-        "together",
-        "fireworks",
-        "openai",
-        "google-ai-studio"
+        "groq", # For gpt-oss-120b and llama-4 model
+        "baseten", # for DeepSeek v3.2 with max token rate
+        "deepinfra", # For all models available with meanable token rate
+        "novita", # like deepinfra but lower token rate and lower cost
+        "hyperbolic", # faster but expensive
+        "together", # backup if above providers failed
+        "fireworks", # like together
+        "openai", # for closed-source OpenAI model
+        "google-ai-studio" # for closed-source Google model, specially Gemini series
     ]
+
+    OPENROUTER_LLM_REASONING_ENABLE = True
     
     # Disable fallbacks - only use specified providers in order
     OPENROUTER_ALLOW_FALLBACKS = True
