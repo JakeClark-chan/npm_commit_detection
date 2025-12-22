@@ -36,7 +36,7 @@
 | Verification Time | 219.7893s | 10.8174s | 88.8718s | 17774.36s |
 | Total Per Commit | 2741.9257s | 32.0841s | 228.1950s | 45639.01s |
 
-**Overall Wall Clock Time:** 760.65 minutes (45639.01 seconds)
+**Overall Wall Clock Time:** 760.65 minutes (45639.01 seconds) (real time with concurrent: 1:38:04)
 
 ## Detailed Commits
 ### Commit 00eab55e: Benign
