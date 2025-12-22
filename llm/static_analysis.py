@@ -121,7 +121,7 @@ class StaticAnalyzer:
         self.max_output_tokens = 4000 # Could be moved to config if needed
         self.max_retries = 3
         self.temperature = StaticAnalysisConfig.TEMPERATURE
-        self.concurrent_threads = LLMConfig.CONCURRENT_THREADS
+        self.concurrent_threads = 1 # LLMConfig.CONCURRENT_THREADS - Disabled for stress test concurrency
         
         # Calculate max input tokens (reserve space for output and system prompt)
         self.max_input_tokens = self.context_window - self.max_output_tokens - 2000

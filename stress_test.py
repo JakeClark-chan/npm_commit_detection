@@ -38,6 +38,7 @@ VERSION_TAG = "8.19.5"
 PREV_TAG = "8.19.4"
 PREDICTED_COMMITS_FILE = "predicted_commits.json"
 REPORT_FILE = "stress_test_report.md"
+CACHE_FILE = "all_dynamic_report.json"
 
 def recalculate_empty_dynamic(num_commits):
     """Recalculate empty dynamic count from actual report files"""
@@ -138,6 +139,12 @@ def calculate_timing_stats(timings):
     
     def get_stat(values):
         if not values: return {'max':0, 'min':0, 'avg':0, 'total':0}
+        
+        # Check if all values are 'cached' (or effectively 0 due to cache) 
+        # But here values are numbers. 
+        # If we want to show 'cached' in report, we should handle it in the report generation 
+        # or special case here. For now let's keep it numeric 0.0 for calculations
+        # and handle display logic later.
         return {
             'max': max(values),
             'min': min(values),
@@ -395,141 +402,214 @@ def main():
         "predictions": {"malware": 0, "benign": 0, "unknown": 0}
     }
     
-    repo = Repository(str(abs_repo_path))
-    static_analyzer = StaticAnalyzer()
-    dynamic_analyzer = DynamicAnalyzer()
+    # Shared resources and locks
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     
-    dynamic_analyzer = DynamicAnalyzer()
+    repo_lock = threading.Lock() # Lock for git operations and dynamic analysis on cache miss
+    stats_lock = threading.Lock() # Lock for updating stats
+    file_lock = threading.Lock() # Lock for writing partial results
     
-    # Setup iterator
-    if args.verbose:
-        commit_iter = enumerate(commits)
-    else:
-        commit_iter = enumerate(tqdm(commits, desc="Analyzing Commits", unit="commit"))
-
-    for i, commit in commit_iter:
-        if args.verbose:
-            print(f"\n[{i+1}/{len(commits)}] Processing commit {commit[:8]}...")
-            
-        # Context manager to suppress output if not verbose
-        cm = contextlib.nullcontext() if args.verbose else contextlib.redirect_stdout(io.StringIO())
-        
-        with cm:
-            # Ensure clean state before each dynamic analysis checkout attempt
-            cleanup_repo(str(abs_repo_path))
-        
-        static_res = {}
-        dynamic_res = {}
-        static_output = {}  # Full output for advanced verification
-        report_path = None  # Dynamic report path for advanced verification
-        analysis_failed = False
-        
-        # STATIC ANALYSIS
+    # Load Cache
+    dynamic_cache = {}
+    if os.path.exists(CACHE_FILE):
         try:
-            print("  Running Static Analysis...")
-            static_start = time.time()
-            static_output = static_analyzer.analyze_commits(repo, [commit])
-            
-            # Extract timings if available, else calc fallback
-            commit_timings = static_output.get('timings', {}).get(commit, {'pre_analysis': 0.0, 'static_analysis': time.time() - static_start})
-            
-            issues_list = []
-            if 'all_issues' in static_output:
-                for issue in static_output['all_issues']:
-                    issues_list.append({
-                        'severity': issue.severity,
-                        'category': issue.category,
-                        'description': issue.description,
-                        'file_path': issue.file_path,
-                        'recommendation': issue.recommendation
-                    })
-            
-            static_res = {
-                'total_issues': static_output.get('total_issues', 0),
-                'issues': issues_list
-            }
+            with open(CACHE_FILE, 'r') as f:
+                dynamic_cache = json.load(f)
+            if args.verbose:
+                print(f"Loaded {len(dynamic_cache)} cached dynamic reports.")
         except Exception as e:
-            print(f"  Static analysis failed: {e}")
-            stats["failed_requests"] += 1
-            analysis_failed = True
-            commit_timings = {'pre_analysis': 0.0, 'static_analysis': 0.0}
-
-        # DYNAMIC ANALYSIS
+            print(f"Warning: Failed to load cache file: {e}")
+    
+    # Repo instance: Repository class reads git. If it just reads, it might be fine, but git commands strictly might need lock if they change CWD (which they shouldn't with -C)
+    # However, cleanup_repo definitely needs exclusive access.
+    
+    def process_commit(commit_idx, commit_hash):
         try:
-            print("  Running Dynamic Analysis...")
-            dynamic_start = time.time()
-            report_path = dynamic_analyzer.analyze(str(abs_repo_path), commit)
-            dynamic_duration = time.time() - dynamic_start
+            # Thread-local result containers
+            local_timings = {}
+            local_prediction = None
+            local_commit_timings = {'pre_analysis': 0.0, 'static_analysis': 0.0}
             
-            if report_path:
-                with open(report_path, 'r') as f:
-                    dynamic_res = json.load(f)
+            if args.verbose:
+                 # Just print simply to avoid messing up tqdm
+                 pass 
+
+            static_res = {}
+            dynamic_res = {}
+            analysis_failed = False
+            
+            # STATIC ANALYSIS
+            # Instantiate per thread/task to avoid shared state issues (self.issues)
+            local_static_analyzer = StaticAnalyzer()
+            # We can use a shared Repository instance if it's stateless, but 'Repository' class might not be.
+            # Let's instantiate it locally to be safe or use the shared one if we trust it.
+            # 'Repository' seems to just run git commands.
+            # BUT, we need to be careful about current working directory? No, -C handles it.
+            local_repo = Repository(str(abs_repo_path))
+            
+            try:
+                # print(f"  [{commit_hash[:8]}] Running Static Analysis...")
+                static_start = time.time()
+                static_output = local_static_analyzer.analyze_commits(local_repo, [commit_hash])
                 
-                # Check for empty result specifically
-                # Example: {"status": "finished", "id": "...", "result": []}
-                if dynamic_res.get('status') == 'finished' and isinstance(dynamic_res.get('result'), list) and not dynamic_res.get('result'):
-                    print("  Dynamic analysis finished with empty result (no findings).")
-                    stats["empty_dynamic"] += 1
-            else:
-                print("  Dynamic analysis returned no report.")
-                stats["empty_dynamic"] += 1
-                dynamic_res = {"error": "No report generated"}
-        except Exception as e:
-            print(f"  Dynamic analysis failed: {e}")
-            stats["failed_requests"] += 1
-            analysis_failed = True
-            dynamic_duration = 0.0
+                commit_timings = static_output.get('timings', {}).get(commit_hash, {'pre_analysis': 0.0, 'static_analysis': time.time() - static_start})
+                local_commit_timings = commit_timings
+                
+                issues_list = []
+                if 'all_issues' in static_output:
+                    for issue in static_output['all_issues']:
+                        issues_list.append({
+                            'severity': issue.severity,
+                            'category': issue.category,
+                            'description': issue.description,
+                            'file_path': issue.file_path,
+                            'recommendation': issue.recommendation
+                        })
+                
+                static_res = {
+                    'total_issues': static_output.get('total_issues', 0),
+                    'issues': issues_list
+                }
+            except Exception as e:
+                print(f"  [{commit_hash[:8]}] Static analysis failed: {e}")
+                with stats_lock:
+                    stats["failed_requests"] += 1
+                analysis_failed = True
 
-        if analysis_failed:
-            stats["failed_commits"] += 1
-        
-        # Verification (using advanced multi-tool correlation)
-        print("  Running Simple Verification...")
-        verification_start = time.time()
-        verification_duration = 0.0
-        try:
-            # Use simple verification as requested (more robust/consistent for USER)
-            prediction, explanation = simple_verification(commit, static_res, dynamic_res)
-            verification_duration = time.time() - verification_start
+            # DYNAMIC ANALYSIS
+            dynamic_duration = 0.0
+            try:
+                # Check cache first (using short hash)
+                short_commit = commit_hash[:8]
+                is_cached = False
+                
+                # Check cache (read-only, no lock needed if dict is not modified, which it isn't here)
+                if short_commit in dynamic_cache:
+                    # print(f"  [{commit_hash[:8]}] Using cached dynamic report")
+                    dynamic_res = dynamic_cache[short_commit]
+                    dynamic_duration = 0.0
+                    is_cached = True
+                
+                if not is_cached:
+                    # Cache Miss - Need to run actual dynamic analysis
+                    # This involves git operations (checkout) so we MUST lock the repo.
+                    with repo_lock:
+                        # Ensure clean state
+                        cleanup_repo(str(abs_repo_path))
+                        
+                        # print(f"  [{commit_hash[:8]}] Running Dynamic Analysis (Cache Miss)...")
+                        dynamic_start = time.time()
+                        # Instantiate inside lock just in case
+                        local_dynamic_analyzer = DynamicAnalyzer()
+                        report_path = local_dynamic_analyzer.analyze(str(abs_repo_path), commit_hash)
+                        dynamic_duration = time.time() - dynamic_start
+                        
+                        if report_path:
+                            with open(report_path, 'r') as f:
+                                dynamic_res = json.load(f)
+                        
+                        # Cleanup after
+                        cleanup_repo(str(abs_repo_path))
+
+                # Process results
+                if dynamic_res:
+                    if dynamic_res.get('status') == 'finished' and isinstance(dynamic_res.get('result'), list) and not dynamic_res.get('result'):
+                         with stats_lock:
+                            stats["empty_dynamic"] += 1
+                else:
+                    with stats_lock:
+                        stats["empty_dynamic"] += 1
+                    dynamic_res = {"error": "No report generated"}
+
+            except Exception as e:
+                print(f"  [{commit_hash[:8]}] Dynamic analysis failed: {e}")
+                with stats_lock:
+                    stats["failed_requests"] += 1
+                analysis_failed = True
+                
+            if analysis_failed:
+                with stats_lock:
+                    stats["failed_commits"] += 1
+
+            # VERIFICATION
+            verification_start = time.time()
+            verification_duration = 0.0
+            try:
+                prediction, explanation = simple_verification(commit_hash, static_res, dynamic_res)
+                verification_duration = time.time() - verification_start
+                
+                label = "unknown"
+                if "malware" in prediction:
+                    label = "malware"
+                elif "benign" in prediction:
+                    label = "benign"
+                
+                with stats_lock:
+                    stats["predictions"][label] = stats["predictions"].get(label, 0) + 1
+                
+                local_prediction = {
+                    "hash": commit_hash,
+                    "sample_folder": "mongoose",
+                    "predict": label,
+                    "explanation": explanation
+                }
+                
+                # print(f"  [{commit_hash[:8]}] Result: {label.upper()}")
+                
+            except Exception as e:
+                print(f"  [{commit_hash[:8]}] Verification failed: {e}")
+                verification_duration = time.time() - verification_start
+                with stats_lock:
+                    stats["failed_requests"] += 1
+
+            # Prepare timing entry
+            timing_entry = {
+                "commit": commit_hash,
+                "pre_analysis_time": local_commit_timings['pre_analysis'],
+                "static_analysis_time": local_commit_timings['static_analysis'],
+                "dynamic_analysis_time": dynamic_duration,
+                "verification_time": verification_duration
+            }
             
-            label = "unknown"
-            if "malware" in prediction:
-                label = "malware"
-            elif "benign" in prediction:
-                label = "benign"
-            
-            stats["predictions"][label] = stats["predictions"].get(label, 0) + 1
-            
-            predictions.append({
-                "hash": commit,
-                "sample_folder": "mongoose",
-                "predict": label,
-                "explanation": explanation
-            })
-            print(f"  Result: {label.upper()}")
-            
+            return timing_entry, local_prediction
+
         except Exception as e:
-            print(f"  Verification failed: {e}")
-            verification_duration = time.time() - verification_start
-            stats["failed_requests"] += 1
+            print(f"Critical error processing commit {commit_hash}: {e}")
+            return None, None
+
+    # Run Concurrent Execution
+    MAX_WORKERS = 8
+    print(f"Starting analysis with {MAX_WORKERS} threads...")
+    
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # Submit all tasks
+        future_to_commit = {executor.submit(process_commit, i, commit): commit for i, commit in enumerate(commits)}
         
-        # Record Timing (now includes verification time)
-        timing_entry = {
-            "commit": commit,
-            "pre_analysis_time": commit_timings['pre_analysis'],
-            "static_analysis_time": commit_timings['static_analysis'],
-            "dynamic_analysis_time": dynamic_duration,
-            "verification_time": verification_duration
-        }
-        timings.append(timing_entry)
-        
-        # Save incremental timings
-        with open('predicted_time.json', 'w') as f:
-            json.dump(timings, f, indent=2)
+        # Iteration with progress bar
+        if args.verbose:
+            iterator = as_completed(future_to_commit)
+        else:
+            iterator = tqdm(as_completed(future_to_commit), total=len(commits), desc="Analyzing Commits", unit="commit")
             
-        # Incremental save predictions
-        with open(PREDICTED_COMMITS_FILE, 'w') as f:
-            json.dump(predictions, f, indent=2)
+        for future in iterator:
+            commit = future_to_commit[future]
+            try:
+                t_entry, prediction = future.result()
+                
+                if t_entry and prediction:
+                    with file_lock:
+                        timings.append(t_entry)
+                        predictions.append(prediction)
+                        
+                        # Incremental saves
+                        with open('predicted_time.json', 'w') as f:
+                            json.dump(timings, f, indent=2)
+                        with open(PREDICTED_COMMITS_FILE, 'w') as f:
+                            json.dump(predictions, f, indent=2)
+                            
+            except Exception as e:
+                print(f"Generated exception for commit {commit}: {e}")
 
     # Recalculate empty dynamic count from actual report files
     actual_empty_dynamic = recalculate_empty_dynamic(len(commits))
@@ -537,6 +617,11 @@ def main():
     # Calculate accuracy and timing metrics
     accuracy_metrics = calculate_accuracy_metrics(predictions)
     timing_stats = calculate_timing_stats(timings)
+    
+    # Check if all commits used cache (total dynamic time is 0 and we have commmits)
+    all_cached = False
+    if timings and timing_stats and timing_stats['dynamic_analysis_time']['max'] == 0:
+         all_cached = True
     
 
     # Load truth labels for report
@@ -588,12 +673,20 @@ def main():
             for k, v in timing_stats.items():
                 if k != 'overall_wall_clock':
                     name = k.replace('_', ' ').title()
-                    f.write(f"| {name} | {v['max']:.4f}s | {v['min']:.4f}s | {v['avg']:.4f}s | {v['total']:.2f}s |\n")
+                    
+                    if k == 'dynamic_analysis_time' and all_cached:
+                         f.write(f"| {name} | cached | cached | cached | cached |\n")
+                    else:
+                         f.write(f"| {name} | {v['max']:.4f}s | {v['min']:.4f}s | {v['avg']:.4f}s | {v['total']:.2f}s |\n")
             f.write(f"\n**Overall Wall Clock Time:** {timing_stats['overall_wall_clock']/60:.2f} minutes ({timing_stats['overall_wall_clock']:.2f} seconds)\n")
         else:
             f.write("No timing data available.\n")
         
         f.write("\n## Detailed Commits\n")
+        # Ensure predictions are sorted by processing order or hash for consistency
+        # Since multithreading mixes order, let sort by hash for deterministic report
+        predictions.sort(key=lambda x: x['hash'])
+        
         for p in predictions:
             commit_hash = p['hash']
             f.write(f"### Commit {commit_hash[:8]}: {p['predict'].capitalize()}\n")

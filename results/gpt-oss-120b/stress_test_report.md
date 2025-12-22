@@ -11,7 +11,7 @@
 - Failed Commits: 0
 - Empty Dynamic: 197
 - Cost: $0.358
-- Total tokens: 1.64M
+- Total tokens: 1.64M (Prompt 1.39M, Reasoning 0, Completion 255K)
 
 ## Predictions
 - malware: 119
