@@ -141,41 +141,11 @@ class StaticAnalyzer:
         self.issues: List[SecurityIssue] = []
         self.import_analyses: List[ImportAnalysis] = []
         
-        # Path to the deobfuscation tool script
-        self.deobfuscator_script = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-            "tools", 
-            "deobfuscate.js"
-        )
 
-    def _deobfuscate_code(self, code: str) -> str:
-        """
-        Attempt to deobfuscate code using the de4js wrapper tool.
-        Returns the deobfuscated code or the original if failed/no change.
-        """
-        try:
-            # Use node to run the deobfuscator
-            process = subprocess.Popen(
-                ["node", self.deobfuscator_script],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            stdout, stderr = process.communicate(input=code)
-            
-            if process.returncode != 0:
-                logger.warning(f"Deobfuscation failed: {stderr}")
-                return code
-            
-            # If output is significantly different, return it
-            return stdout.strip() if stdout.strip() else code
-            
-        except Exception as e:
-            logger.error(f"Error running deobfuscator: {e}")
-            return code
+
+
     
-    def analyze_commits(self, repository, commit_shas: List[str]) -> Dict:
+    def analyze_commits(self, repository, commit_shas: List[str], deobfuscated_data: Dict[str, Dict[str, str]] = None) -> Dict:
         """
         Analyze a list of commits for security issues.
         Analysis is performed per-file for each commit diff.
@@ -268,6 +238,13 @@ class StaticAnalyzer:
                     file_diff = repository.get_file_diff(sha, filename)
                     if not file_diff or not file_diff.strip():
                         continue
+                        
+                    # Check if we have deobfuscated content for this file
+                    if deobfuscated_data and sha in deobfuscated_data and filename in deobfuscated_data[sha]:
+                        deobfuscated_content = deobfuscated_data[sha][filename]
+                        print(f"    - 🔓 Using deobfuscated content for {filename}")
+                        # Override diff with deobfuscated content
+                        file_diff = f"--- [DEOBFUSCATED AND REFINED CONTENT] ---\n{deobfuscated_content}"
                         
                     # Calculate Risk Score
                     risk_score = self._calculate_file_risk(filename, file_diff)

@@ -535,7 +535,8 @@ def run_static_analysis(repo_path: str, end_tag: str, start_tag: Optional[str]) 
     
     commit_shas = results['commit_shas']
     
-    # Run static analysis with LLM
+    
+    # Run Static Analysis
     print("\n" + "="*80)
     print("🔬 STATIC ANALYSIS PHASE")
     print("="*80)
@@ -565,9 +566,23 @@ def run_static_analysis(repo_path: str, end_tag: str, start_tag: Optional[str]) 
             json.dump(json_data, f, indent=2)
         
         return str(output_file), []
+
+    # Run Deobfuscation Agent
+    print("\n" + "="*80)
+    print("🔓 DEOBFUSCATION PHASE")
+    print("="*80)
+    
+    from llm.deobfuscator_agent import DeobfuscatorAgent
+    deobfuscator = DeobfuscatorAgent()
+    deobfuscated_data = deobfuscator.process_commits(repo, commit_shas)
+    
+    if deobfuscated_data:
+        print(f"✅ Deobfuscation completed. Found obfuscated code in {len(deobfuscated_data)} commits.")
+    else:
+        print("✅ No obfuscated code detected requiring intervention.")
     
     static_analyzer = StaticAnalyzer()
-    static_results = static_analyzer.analyze_commits(repo, commit_shas)
+    static_results = static_analyzer.analyze_commits(repo, commit_shas, deobfuscated_data)
     
     report = static_analyzer.generate_report(static_results)
     print(report)

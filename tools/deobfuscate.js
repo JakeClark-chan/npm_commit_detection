@@ -51,7 +51,8 @@ function detect(source) {
     ) {
         return 'urlencode';
     } else if (
-        /((?![^_a-zA-Z$])[\w$]*)\(-?('|")(0x[a-f\d]+|\\x30\\x78[\\xa-f\d]+)\2(\s*,\s*('|").+?\5)?\)/i.test(source)
+        /((?![^_a-zA-Z$])[\w$]*)\(-?('|")(0x[a-f\d]+|\\x30\\x78[\\xa-f\d]+)\2(\s*,\s*('|").+?\5)?\)/i.test(source) ||
+        /((?![^_a-zA-Z$])[\w$]*)\(0x[a-f\d]+\)/i.test(source)
     ) {
         return 'obfuscatorio';
     } else if (/^var\s+((?![^_a-zA-Z$])[\w$]*)\s*=\s*\[.*?\];/.test(source)) {
@@ -73,6 +74,7 @@ const source = fs.readFileSync(0, 'utf8'); // Read from stdin
 
 try {
     const type = detect(source);
+    console.error("DEBUG: Detected type:", type);
     if (type && DECODERS[type]) {
         if (!DECODERS[type].external) {
             // If path starts with lib/, assume relative to root (fix for my previous mistake if any)
@@ -87,6 +89,6 @@ try {
         console.log(source);
     }
 } catch (e) {
-    console.error("Deobfuscation failed:", e.message);
+    console.error("Deobfuscation failed:", e);
     console.log(source); // Fallback to original
 }
