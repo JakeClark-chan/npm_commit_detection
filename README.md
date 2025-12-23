@@ -1,62 +1,61 @@
 # Commit Detection - NPM Malware Analysis
 
-Comprehensive commit analysis tool combining pre-analysis and static analysis with LangGraph and OpenAI LLM.
+A comprehensive security analysis tool for NPM packages that combines pre-analysis, static analysis (LLM-based), dynamic analysis (sandboxed), and deobfuscation to detect malicious commits.
 
-Requirement to use main.py TUI mode: fzf installed (see TUI_README.md)
+## 🚀 Features
 
-## Overview
+### 🔍 Analysis Pipeline
+1.  **Pre-Analysis**:
+    *   Analyzes repository metadata and contributor trust scores.
+    *   Detects sensitive file modifications (startup scripts, package.json).
+    *   Identifies suspicious change patterns and large commits.
 
-This tool analyzes git repository commits to detect potential security issues and malicious code, specifically designed for npm packages. It implements a two-phase analysis workflow:
+2.  **🛡️ Deobfuscation (New)**:
+    *   **Detection**: Automatically detects obfuscated code using heuristics and LLM.
+    *   **Deobfuscation**: Uses `javascript-deobfuscator` to reverse common obfuscation techniques (array rotation, string encoding, etc.).
+    *   **Refinement**: Uses an LLM to rename variables and restore readability before static analysis.
 
-1. **Pre-Analysis Phase**: Analyzes metadata, contributor trust, and code changes
-2. **Static Analysis Phase**: Uses OpenAI LLM to detect security vulnerabilities
+3.  **🧠 Static Analysis**:
+    *   Uses OpenAI LLMs (GPT-4o, etc.) to detect vulnerability patterns.
+    *   Detects code injection, suspicious network calls, crypto-mining, and data exfiltration.
+    *   Analyzes code contextually, even across large diffs.
 
-## 🛡️ Deobfuscation Support
+4.  **📦 Dynamic Analysis**:
+    *   Runs the package in a secure, sandboxed environment (Vagrant/VirtualBox).
+    *   Monitors runtime behavior, network traffic, and file system changes.
+    *   safe execution of potentially malicious code.
 
-The tool includes a specialized **Deobfuscator Agent** that automatically detects and reverses obfuscated malicious code.
+5.  **🔎 Snyk Integration**:
+    *   Optional integration with Snyk to scan for known vulnerabilities in dependencies.
 
-- **Detection**: Uses heuristics and LLM to identify obfuscated files without slowing down the pipeline.
-- **Deobfuscation**: Powered by [javascript-deobfuscator](https://github.com/ben-sb/javascript-deobfuscator) to unpack arrays, simplify expressions, and remove anti-debugging checks.
-- **Refinement**: Uses an LLM to rename variables and restore code readability before static analysis.
+### 📊 Reporting
+-   Generates detailed Markdown and JSON reports.
+-   Provides severity levels and actionable recommendations.
 
-### Configuration
-Deobfuscation is enabled by default. You can configure it in `.env`:
-```env
-DEOBFUSCATION_ENABLED=true
-DEOBFUSCATION_MODEL=gpt-4o-mini
-```
+## 🛠️ Installation
 
-## Features
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/JakeClark-chan/npm_commit_detection.git
+    cd npm_commit_detection/commit_detection
+    ```
 
-### Pre-Analysis
-- Repository metadata analysis
-- Contributor trust scoring
-- Sensitive file detection (package.json, build scripts, etc.)
-- Change pattern analysis
-- Large commit detection
+2.  **Install dependencies**:
+    ```bash
+    uv pip install -e .
+    ```
 
-### Static Analysis (LLM-powered)
-The LLM analyzes code to detect:
-- **Code Injection**: eval(), Function(), vm.runInNewContext
-- **Suspicious Network Access**: Unexpected HTTP requests, data exfiltration
-- **Data Leaks**: Exposure of credentials, tokens, sensitive data
-- **Unsafe Environment Variables**: process.env access patterns
-- **Crypto Activities**: Bitcoin, Ethereum, wallet operations, mining
-- **Command Execution**: child_process, exec(), spawn()
-- **Obfuscation**: Hex encoding, base64, suspicious patterns
+3.  **Install external tools** (for Dynamic Analysis & Deobfuscation):
+    *   **Node.js & npm**: Required for deobfuscation tools.
+    *   **Vagrant & VirtualBox**: Required for dynamic analysis sandbox.
+    *   **fzf**: Required for TUI mode.
 
-## Installation
+## ⚙️ Configuration
 
-```bash
-cd commit_detection
-uv pip install -e .
-```
-
-## Configuration
-
-Create a `.env` file with:
+Create a `.env` file in the `commit_detection` directory:
 
 ```env
+# Required: OpenAI API
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_BASE_URL=https://api.openai.com/v1/
 
@@ -64,153 +63,88 @@ OPENAI_BASE_URL=https://api.openai.com/v1/
 LLM_MODEL=gpt-4o-mini
 LLM_CONTEXT_WINDOW=128000
 
-# Optional: Enable LangSmith tracing
+# Deobfuscation (Enabled by default)
+DEOBFUSCATION_ENABLED=true
+DEOBFUSCATION_MODEL=gpt-4o-mini
+
+# Dynamic Analysis (Optional)
+VAGRANT_CWD=../vagrant_sandbox  # Path to Vagrantfile
+
+# Optional: LangSmith Tracing
 LANGSMITH_API_KEY=your_langsmith_api_key
 LANGSMITH_TRACING_V2=true
 LANGSMITH_PROJECT=commit-detection
 ```
 
-### Configuration Options
-- `LLM_MODEL`: OpenAI model to use (default: `gpt-4o-mini`)
-- `LLM_CONTEXT_WINDOW`: Maximum context window in tokens (default: `128000`)
-  - gpt-4o-mini: 128,000 tokens
-  - gpt-4o: 128,000 tokens  
-  - gpt-4-turbo: 128,000 tokens
-  - gpt-3.5-turbo: 16,385 tokens
+## 🖥️ Usage
 
-The tool automatically handles large commits by:
-1. Using `tiktoken` to count tokens accurately
-2. Splitting large diffs into chunks based on file boundaries
-3. Making multiple LLM requests with context from previous chunks
-4. Maintaining analysis consistency across chunks
+### Interactive TUI Mode
+Run without arguments to enter the Terminal User Interface:
+```bash
+python main.py
+```
+*Requires `fzf` installed.*
 
-## Usage
-
-### Basic Usage
+### Command Line Mode
+Run with arguments for automated analysis:
 
 ```bash
-python main.py <repo_path> <version_tag> [previous_tag]
+python main.py <repo_path> <version_tag> [previous_tag] [options]
 ```
+
+#### Arguments:
+-   `repo_path`: Path to the local git repository to analyze.
+-   `version_tag`: The target version/tag to analyze (end of range).
+-   `previous_tag`: (Optional) The starting version/tag. If omitted, analyzes just the target.
+
+#### Options:
+-   `--dynamic <commit_hash>`: Run dynamic analysis on a specific commit.
+-   `--snyk`: Enable Snyk dependency scanning.
+-   `--skip-dynamic`: Skip the dynamic analysis phase.
 
 ### Examples
 
-Analyze specific version:
-```bash
-python main.py ../mongoose 8.19.1
-```
-
-Compare two versions:
+**Analyze a specific version range:**
 ```bash
 python main.py ../mongoose 8.19.1 8.19.0
 ```
 
-### Output
-
-The tool generates two files:
-1. `analysis_report_<version>_<timestamp>.txt` - Human-readable report
-2. `analysis_report_<version>_<timestamp>.json` - Structured JSON data (LLM-friendly)
-
-### Exit Codes
-- `0`: No issues found
-- `1`: Security issues found (non-critical)
-- `2`: Critical security issues found
-
-## Architecture
-
-### LangGraph Workflow
-
-```
-┌─────────────────┐
-│  Pre-Analysis   │  Analyze metadata, contributors, changes
-│     (Node 1)    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Static Analysis │  LLM-powered vulnerability detection
-│     (Node 2)    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Generate Report │  Create comprehensive report
-│     (Node 3)    │
-└─────────────────┘
-```
-
-### Modules
-
-- **main.py**: Entry point and LangGraph workflow orchestration
-- **pre_analysis.py**: Repository analysis, contributor profiling, metadata detection
-- **static_analysis.py**: LLM-powered security analysis
-
-## LangSmith Integration
-
-When `LANGSMITH_API_KEY` is configured, the workflow is automatically traced in LangSmith, allowing you to:
-- Visualize the workflow execution
-- Monitor LLM calls and token usage
-- Debug and optimize analysis steps
-- Track performance metrics
-
-Visit [LangSmith](https://smith.langchain.com/) to view your traces.
-
-## Example Output
-
-```
-================================================================================
-NPM COMMIT DETECTION - COMPREHENSIVE ANALYSIS REPORT
-================================================================================
-
-Repository: ../mongoose
-Version: 8.19.1
-Previous Version: 8.19.0
-Analysis Date: 2025-11-12T10:30:45
-
-================================================================================
-PART 1: PRE-ANALYSIS
-================================================================================
-
-Total commits analyzed: 15
-Sensitive files modified: 3
-New contributors: 1
-⚠️  Build/install scripts modified: postinstall.js
-
-================================================================================
-PART 2: STATIC ANALYSIS
-================================================================================
-
-Total Security Issues Found: 2
-
-Issues by Severity:
-  HIGH: 1
-  MEDIUM: 1
-
-[1] HIGH - suspicious_network
-    Commit: a1b2c3d4
-    File: lib/network.js
-    Description: Unexpected HTTP request to external domain
-    Recommendation: Review and validate the necessity of this network call
-```
-
-## Based On
-
-This tool implements concepts from:
-- **Anomalicious** paper (arXiv:2103.03846): Pre-analysis methodology
-- **LangGraph**: Workflow orchestration
-- **LangSmith**: Observability and tracing
-
-## Development
-
-### Run Tests
+**Analyze with Dynamic Analysis:**
 ```bash
-pytest test_*.py
+python main.py ../mongoose 8.19.1 8.19.0 --dynamic a1b2c3d
 ```
 
-### Lint
+**Analyze with Snyk:**
 ```bash
-ruff check .
+python main.py ../mongoose 8.19.1 --snyk
 ```
 
-## License
+## 🏗️ Architecture
+
+The tool is built using **LangGraph** to orchestrate the analysis workflow:
+
+```mermaid
+graph TD
+    A[Start] --> B[Pre-Analysis]
+    B --> C{Obfuscation Detected?}
+    C -->|Yes| D[Deobfuscator Agent]
+    C -->|No| E[Static Analysis]
+    D --> E
+    E --> F{Dynamic Requested?}
+    F -->|Yes| G[Dynamic Analysis]
+    F -->|No| H{Snyk Requested?}
+    G --> H
+    H -->|Yes| I[Snyk Scan]
+    H -->|No| J[Generate Report]
+    I --> J
+    J --> K[End]
+```
+
+## 🤝 Contributing
+
+1.  **Run Tests**: `pytest test_*.py`
+2.  **Linting**: `ruff check .`
+
+## 📄 License
 
 MIT
