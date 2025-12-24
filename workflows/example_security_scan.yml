@@ -7,6 +7,10 @@ on:
 jobs:
   security-scan:
     runs-on: ubuntu-latest
+
+    environment: 
+      name: OpenAI
+    
     permissions:
       contents: read
       pull-requests: read
@@ -23,6 +27,7 @@ jobs:
           repository: JakeClark-chan/npm_commit_detection
           path: npm_commit_detection
           ref: master
+          submodules: recursive # Fetch submodules
 
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -30,21 +35,31 @@ jobs:
       - name: Setup Environment and Scan
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           # Optional: Add LANGSMITH secrets if needed
           # LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          CONCURRENT_THREADS: ${{ vars.CONCURRENT_THREADS }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_USE_OPENROUTER: ${{ vars.LLM_USE_OPENROUTER }}
+          LLM_VERIFICATION_MODEL: ${{ vars.LLM_VERIFICATION_MODEL }}
         run: |
           # 1. Setup uv and venv in the tool directory
-          source $HOME/.cargo/env
           cd npm_commit_detection
           
           echo "Setting up virtual environment..."
           uv venv
           source .venv/bin/activate
           
-          echo "Installing dependencies..."
-          uv pip install -e .
+          echo "Installing Python dependencies..."
+          uv pip install -r requirements.txt
           
-          # 2. Run Analysis
+          # 2. Setup Deobfuscator Tool
+          echo "Installing Deobfuscator dependencies..."
+          cd commit_detection/tools/javascript-deobfuscator
+          npm install
+          cd ../..
+          
+          # 3. Run Analysis
           # Navigate to the source code directory where main.py resides
           cd commit_detection
           
@@ -59,10 +74,11 @@ jobs:
           # Running with --skip-dynamic for faster CI feedback (static analysis + deobfuscation only)
           # Arguments: <repo_path> <end_tag/hash> <start_tag/hash> <options>
           python main.py "$TARGET_REPO_PATH" HEAD origin/master --skip-dynamic
+          
 
       - name: Upload Analysis Report
         uses: actions/upload-artifact@v4
         if: always() # Upload even if issues are found (exit code 1)
         with:
           name: security-analysis-report
-          path: npm_commit_detection/commit_detection/analysis_report_*.md
+          path: npm_commit_detection/commit_detection/reports/verification_report_*.md
