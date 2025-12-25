@@ -162,47 +162,75 @@ class DeobfuscatorAgent:
         Run the configured deobfuscation tool.
         """
         try:
-            # Use ts-node (via npx) to run the CLI directly to avoid compilation steps if possible, 
-            # or just use node if we compiled it. 
-            
-            # Actually, let's write to a temp file first because the tool takes input file arg
+            # Create temporary files
             import tempfile
-            
             with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as tmp_in:
                 tmp_in.write(code)
                 tmp_in_path = tmp_in.name
-                
+            
             tmp_out_path = tmp_in_path + ".out.js"
             
-            # Try to run using npx ts-node if we are pointing to a .ts file
-            # or node if .js
+            # Prepare command
+            # DeobfuscationConfig.TOOL_USE_CMD is a list template: ["tool", "<file-input>", "-o", "<file-output>"]
+            cmd_template = DeobfuscationConfig.TOOL_USE_CMD
             cmd = []
-            if self.deobfuscator_script.endswith(".ts"):
-                cmd = ["npx", "ts-node", self.deobfuscator_script, "-i", tmp_in_path, "-o", tmp_out_path]
-            else:
-                 cmd = ["node", self.deobfuscator_script, "-i", tmp_in_path, "-o", tmp_out_path]
-
-            # Determine CWD (project root to find node_modules)
-            # We assume node_modules is in the parent of tools/ or current dir
-            # The tool specific node_modules are in tools/javascript-deobfuscator/
-            if "javascript-deobfuscator" in self.deobfuscator_script:
-                # Find the root of the tool (../..)
-                 tool_dir = os.path.dirname(os.path.dirname(self.deobfuscator_script)) 
-            else:
-                tool_dir = os.path.dirname(self.deobfuscator_script)
             
+            # Check if we are using the internal tool path or a global command
+            tool_path = self.deobfuscator_script
+            
+            # If tool_path is a file that exists, we treating it as a script execution
+            # This preserves backward compatibility for local dev with ts-node/node
+            if os.path.exists(tool_path) and os.path.isfile(tool_path):
+                 if tool_path.endswith(".ts"):
+                     cmd = ["npx", "ts-node", tool_path, "-i", tmp_in_path, "-o", tmp_out_path]
+                 else:
+                     cmd = ["node", tool_path, "-i", tmp_in_path, "-o", tmp_out_path]
+                 
+                 # Set CWD to tool dir for dependencies
+                 if "javascript-deobfuscator" in tool_path:
+                     cwd = os.path.dirname(os.path.dirname(tool_path))
+                 else:
+                     cwd = os.path.dirname(tool_path)
+            
+            else:
+                # Global command mode (CI environment)
+                # We use the configured command template or fall back to tool_path as the executable
+                
+                # If tool_path looks like a command name (no separators), treat it as the executable
+                executable = tool_path
+                
+                # Construct command from template
+                for arg in cmd_template:
+                    if arg == DeobfuscationConfig.TOOL_NAME: 
+                         # Replace tool name with actual executable path/name we resolved
+                         cmd.append(executable)
+                    elif arg == DeobfuscationConfig.FILE_INPUT:
+                        cmd.append(tmp_in_path)
+                    elif arg == DeobfuscationConfig.FILE_OUTPUT:
+                        cmd.append(tmp_out_path)
+                    else:
+                        cmd.append(arg)
+                
+                # If template didn't use placeholders (e.g. legacy config), try to infer reasonable default
+                if cmd == cmd_template:
+                     # Fallback: executable input -o output
+                     cmd = [executable, tmp_in_path, "-o", tmp_out_path]
+                     
+                cwd = os.getcwd() # Run in current dir
+
+            logger.info(f"Running deobfuscator: {' '.join(cmd)}")
+
             process = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                cwd=tool_dir # Run in tool dir to find its dependencies
+                cwd=cwd
             )
 
             if process.returncode != 0:
                 logger.warning(f"Deobfuscation tool failed: {process.stderr}")
-                os.unlink(tmp_in_path)
-                if os.path.exists(tmp_out_path):
-                    os.unlink(tmp_out_path)
+                if os.path.exists(tmp_in_path): os.unlink(tmp_in_path)
+                if os.path.exists(tmp_out_path): os.unlink(tmp_out_path)
                 return code
             
             if os.path.exists(tmp_out_path):
@@ -212,7 +240,7 @@ class DeobfuscatorAgent:
                 os.unlink(tmp_out_path)
                 return result.strip() if result.strip() else code
             else:
-                os.unlink(tmp_in_path)
+                if os.path.exists(tmp_in_path): os.unlink(tmp_in_path)
                 return code
             
         except Exception as e:

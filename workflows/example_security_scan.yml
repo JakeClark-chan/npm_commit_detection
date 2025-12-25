@@ -8,7 +8,7 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
 
-    environment: 
+    environment: # Assume that your environment inside repository is named OpenAI
       name: OpenAI
     
     permissions:
@@ -27,7 +27,6 @@ jobs:
           repository: JakeClark-chan/npm_commit_detection
           path: npm_commit_detection
           ref: master
-          submodules: recursive # Fetch submodules
 
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -35,7 +34,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: 'lts/*'
           cache: 'npm'
 
       - name: Setup Environment and Scan
@@ -48,6 +47,10 @@ jobs:
           LLM_MODEL: ${{ vars.LLM_MODEL }}
           LLM_USE_OPENROUTER: ${{ vars.LLM_USE_OPENROUTER }}
           LLM_VERIFICATION_MODEL: ${{ vars.LLM_VERIFICATION_MODEL }}
+          
+          # Deobfuscation Config
+          # Install tool globally and point to it
+          DEOBFUSCATOR_TOOL_PATH: "obfuscator-io-deobfuscator"
         run: |
           # 1. Setup uv and venv in the tool directory
           cd npm_commit_detection
@@ -60,18 +63,16 @@ jobs:
           uv pip install -r requirements.txt
           
           # 2. Setup Deobfuscator Tool
-          echo "Installing Deobfuscator dependencies..."
-          cd commit_detection/tools/javascript-deobfuscator
-          npm install
-          cd ../..
+          echo "Installing Deobfuscator Tool globally..."
+          npm install -g obfuscator-io-deobfuscator
           
           # 3. Run Analysis
-          # Navigate to the source code directory where main.py resides
-          cd commit_detection
+          echo "Current directory before running python:"
+          pwd
           
           # We need to compare the PR HEAD against the base branch (origin/master)
           # The target repository is at the root of the workspace, so relative path is ../..
-          TARGET_REPO_PATH="../../"
+          TARGET_REPO_PATH="../"
           
           # Ensure we have the base branch reference for comparison
           git -C "$TARGET_REPO_PATH" fetch origin master:master || true
@@ -81,10 +82,20 @@ jobs:
           # Arguments: <repo_path> <end_tag/hash> <start_tag/hash> <options>
           python main.py "$TARGET_REPO_PATH" HEAD origin/master --skip-dynamic
           
-
+      - name: Check Scan Verdict
+        run: |
+          # Tìm chuỗi cảnh báo trong tất cả các file report
+          # Nếu tìm thấy (-q nghĩa là quiet, tìm thấy trả về 0)
+          if grep -r "Verdict: 🚨 MALICIOUS" npm_commit_detection/reports/; then
+            echo "❌ CRITICAL: Malicious code detected in the report!"
+            # Đây là lệnh quan trọng nhất: Ép GitHub Actions fail
+            exit 1
+          else
+            echo "✅ Scan passed. No malicious verdict found."
+          fi
       - name: Upload Analysis Report
         uses: actions/upload-artifact@v4
         if: always() # Upload even if issues are found (exit code 1)
         with:
           name: security-analysis-report
-          path: npm_commit_detection/commit_detection/reports/verification_report_*.md
+          path: npm_commit_detection/reports/*.md
