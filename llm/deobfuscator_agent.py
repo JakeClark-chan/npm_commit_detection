@@ -24,6 +24,12 @@ class DeobfuscatorAgent:
         self.enabled = DeobfuscationConfig.ENABLED
         self.deobfuscator_script = DeobfuscationConfig.TOOL_PATH
         
+        # Load regex patterns for static decoding
+        import re
+        self.b64_pattern = re.compile(r'["\']([A-Za-z0-9+/=]{20,})["\']') # Simple heuristic for long b64 strings
+        self.hex_pattern = re.compile(r'\\x[0-9a-fA-F]{2}')
+
+        
         # Initialize LLM for detection and refinement
         self.llm = LLMService.get_llm(
             model_name=DeobfuscationConfig.MODEL,
@@ -69,7 +75,11 @@ class DeobfuscatorAgent:
                 # 2. TOOL: Run deobfuscation tool
                 deobfuscated_content = self._run_deobfuscation_tool(content)
                 
-                # 3. CHECK & REFINE
+                # 3. STATIC DECODE: running static decoder on tool output (or original if tool failed/no change)
+                # This helps catch strings that the tool might have exposed but not decoded, or were there originally
+                deobfuscated_content = self._static_decode(deobfuscated_content)
+                
+                # 4. CHECK & REFINE
                 if deobfuscated_content != content:
                     logger.info(f"   Tool successfully modified content.")
                     # Tool worked, now refine
@@ -93,7 +103,7 @@ class DeobfuscatorAgent:
         # 1. Fast heuristics
         heuristic_score = 0.0
         if "_0x" in code: heuristic_score += 0.4
-        if "\\x" in code: heuristic_score += 0.3
+        if "\\x" in code: heuristic_score += 0.3 # Hex escapes often used to hide strings
         
         # Check density of lines (packed code)
         lines = code.splitlines()
@@ -104,12 +114,26 @@ class DeobfuscatorAgent:
         if "push" in code and "shift" in code and "while" in code:
             heuristic_score += 0.2
             
+        # Check for manual decoding patterns (atob, Buffer, etc) which suggests hidden strings
+        if "atob(" in code or "btoa(" in code: heuristic_score += 0.5 # Strong indicator of hidden value
+        if "Buffer.from" in code and "base64" in code: heuristic_score += 0.5
+        
+        # Check for long base64-like strings (literal)
+        # Using the same pattern as _static_decode but perhaps a bit stricter or checking if match found
+        import re
+        if re.search(r'["\']([A-Za-z0-9+/=]{30,})["\']', code):
+            heuristic_score += 0.5
+
+        # Check for Eval usage
+        if "eval(" in code: heuristic_score += 0.3
+            
         if heuristic_score >= 0.5:
             return True, heuristic_score
             
         # 2. If borderline, ask LLM (optional, but requested "LLM request")
         # Optimization: Only ask if code is small enough/suspicious but not certain
-        if 0.2 <= heuristic_score < 0.5 and len(code) < 5000:
+        # Lower threshold to 0.3 to catch simple base64 usage
+        if 0.3 <= heuristic_score < 0.5 and len(code) < 5000:
              return self._llm_check_obfuscation(code)
              
         return False, heuristic_score
@@ -269,3 +293,100 @@ class DeobfuscatorAgent:
         except Exception as e:
             logger.error(f"LLM refinement failed: {e}")
             return code
+
+    def _static_decode(self, code: str) -> str:
+        """
+        Attempt to statically decode strings in the code (Base64, Hex, URL, HTML, Base32).
+        Annotates the code with decoded values.
+        """
+        import base64
+        import urllib.parse
+        import html
+        import re
+
+        decoded_code = code
+
+        def safe_decode(func, value, label):
+            try:
+                decoded = func(value)
+                if isinstance(decoded, bytes):
+                    decoded = decoded.decode('utf-8', errors='ignore')
+                
+                # Heuristic: only show if "interesting" (readable and long enough or contains special chars)
+                if len(decoded) > 3 and all(32 <= ord(c) < 127 for c in decoded):
+                    return f" // [DECODED {label}]: {decoded}"
+                return ""
+            except Exception:
+                return ""
+
+        # 1. Base64 / Base32 Detection in String Literals
+        # We look for string literals and try to decode them
+        
+        # Regex to find string literals (single or double quoted)
+        # This is a simple approximation
+        files_lines = decoded_code.splitlines()
+        new_lines = []
+        
+        for line in files_lines:
+            new_line = line
+            
+            # Find all string candidates
+            matches = re.finditer(r'["\']([A-Za-z0-9+/=]{8,})["\']', line)
+            
+            for match in matches:
+                candidate = match.group(1)
+                
+                annotation = ""
+                # Try Base64
+                if len(candidate) % 4 == 0: # minimal check
+                     annotation = safe_decode(base64.b64decode, candidate, "BASE64")
+                     if annotation and annotation not in new_line:
+                         new_line += annotation
+                
+                # Try Base32
+                if not annotation: # If not B64, try B32
+                     annotation = safe_decode(base64.b32decode, candidate, "BASE32")
+                     if annotation and annotation not in new_line:
+                         new_line += annotation
+            
+            # 2. URL Encodings (%XX)
+            if "%" in line:
+                # Extract potential url encoded strings? Or just try to unquote the whole line parts?
+                # Simple approach: find strings with %
+                url_matches = re.findall(r'["\']([^"\']*?%[0-9A-Fa-f]{2}[^"\']*?)["\']', line)
+                for candidate in url_matches:
+                     annotation = safe_decode(urllib.parse.unquote, candidate, "URL")
+                     if annotation and annotation != f" // [DECODED URL]: {candidate}" and annotation not in new_line:
+                         new_line += annotation
+
+            # 3. HTML Entities
+            if "&" in line and ";" in line:
+                 html_matches = re.findall(r'["\']([^"\']*?&[a-zA-Z0-9#]+;[^"\']*?)["\']', line)
+                 for candidate in html_matches:
+                     annotation = safe_decode(html.unescape, candidate, "HTML")
+                     if annotation and annotation != f" // [DECODED HTML]: {candidate}" and annotation not in new_line:
+                         new_line += annotation
+
+            # 4. Hex Escapes (\xNN) detection
+            # Python string decoding handles this if we eval, but eval is dangerous.
+            # We can use regex to find \xNN chains
+            if "\\x" in line:
+                try:
+                    # Find \xNN sequences
+                    hex_seqs = re.findall(r'(?:\\x[0-9a-fA-F]{2})+', line)
+                    for seq in hex_seqs:
+                        # manually decode
+                        try:
+                            bytes_seq = bytes([int(x, 16) for x in seq.split('\\x') if x])
+                            decoded_hex = bytes_seq.decode('utf-8', errors='ignore')
+                            if len(decoded_hex) > 3 and all(32 <= ord(c) < 127 for c in decoded_hex):
+                                 if f" // [DECODED HEX]: {decoded_hex}" not in new_line:
+                                     new_line += f" // [DECODED HEX]: {decoded_hex}"
+                        except:
+                            pass
+                except:
+                    pass
+
+            new_lines.append(new_line)
+            
+        return "\n".join(new_lines)

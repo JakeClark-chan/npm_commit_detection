@@ -69,43 +69,7 @@ class StaticAnalyzer:
     """
     
     # Suspicious patterns to look for
-    SUSPICIOUS_PATTERNS = {
-        'network': [
-            r'https?://[^\s\'"]+',  # URLs
-            r'fetch\s*\(',
-            r'axios\.',
-            r'http\.get',
-            r'http\.post',
-            r'XMLHttpRequest',
-        ],
-        'crypto': [
-            r'crypto\.createHash',
-            r'bitcoin',
-            r'ethereum',
-            r'wallet',
-            r'private.*key',
-            r'mnemonic',
-        ],
-        'env': [
-            r'process\.env\.',
-            r'ENV\[',
-            r'getenv\(',
-        ],
-        'eval': [
-            r'\beval\s*\(',
-            r'Function\s*\(',
-            r'vm\.runInNewContext',
-            r'child_process',
-            r'exec\s*\(',
-            r'spawn\s*\(',
-        ],
-        'obfuscation': [
-            r'\\x[0-9a-fA-F]{2}',  # Hex encoding
-            r'String\.fromCharCode',
-            r'atob\s*\(',
-            r'Buffer\.from.*base64',
-        ]
-    }
+    SUSPICIOUS_PATTERNS = StaticAnalysisConfig.SUSPICIOUS_PATTERNS
     
     def __init__(self, model_name: str = None):
         """
@@ -163,31 +127,8 @@ class StaticAnalyzer:
         print(f"\n🔍 Starting static analysis of {len(commit_shas)} commits...")
         print(f"   ⚙️  Configuration: {self.concurrent_threads} threads, Model: {self.model_name}")
         
-        # Define ignored extensions and directories - Adjusted based on user feedback to keep scripts/configs
-        IGNORED_EXTENSIONS = {
-            # Documentation & Text
-            '.md', '.txt', '.rst', '.license', '.ipynb',
-            # Data (Keep .json as it might be package.json)
-            '.lock', '.csv', '.log',
-            # Web Assets
-            '.html', '.css', '.scss', '.less', '.map',
-            # Binary & Media
-            '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico',
-            '.woff', '.woff2', '.ttf', '.eot',
-            '.mp4', '.webm', '.mp3', '.wav',
-            '.zip', '.tar', '.gz', '.pdf', '.jar', '.pyc',
-        }
-
-        IGNORED_DIRECTORIES = [
-            'test/', 'tests/', 'spec/', '__tests__/',
-            'docs/', 'documentation/',
-            'assets/', 'static/', 'public/',
-            'dist/', 'build/', 'out/', 'coverage/',
-            'node_modules/', 'vendor/',
-            '.vscode/', '.idea/',
-            'examples/', 'samples/', '.github/'
-            # Note: .github/ intentionally NOT ignored to detect CI poisoning
-        ]
+        IGNORED_EXTENSIONS = StaticAnalysisConfig.IGNORED_EXTENSIONS
+        IGNORED_DIRECTORIES = StaticAnalysisConfig.IGNORED_DIRECTORIES
 
         # Timing stats
         timings = {} # sha -> {pre_analysis: float, static_analysis: float}
@@ -437,6 +378,10 @@ class StaticAnalyzer:
         score = 0
         
         # 1. Base Score by Extension
+        # high priority for build/task config
+        if '.vscode' in filename or filename.endswith('tasks.json'):
+            score += 10
+
         ext = os.path.splitext(filename)[1].lower()
         if ext in ['.js', '.ts', '.mjs', '.cjs']:
             score += 5

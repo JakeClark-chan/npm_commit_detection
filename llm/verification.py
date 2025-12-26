@@ -108,7 +108,11 @@ class VerificationAnalyzer:
         # or just use os.getenv if I'm lazy, but I should try to be consistent.
         # Let's use os.getenv for now for these specific overrides if they are not in main config yet.
         model_name = verification_model or os.getenv("LLM_VERIFICATION_MODEL", "gpt-4o-mini")
-        temp = float(os.getenv("LLM_VERIFICATION_TEMPERATURE", "1"))
+        try:
+            temp_str = os.getenv("LLM_VERIFICATION_TEMPERATURE", "0.1")
+            temp = float(temp_str) if temp_str.strip() else 0.1
+        except ValueError:
+            temp = 0.1
         print(f"🤖 Initializing verification LLM: {model_name} (temperature={temp})")
         
         self.llm = LLMService.get_llm(
