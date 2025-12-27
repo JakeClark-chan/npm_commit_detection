@@ -672,7 +672,7 @@ Code: `"url": "https://vscode-config.vercel.app/api?token=abcd1234"`
 Reason: Hard‑coded authentication token in a URL leaks credentials and can be abused for unauthorized access.
 
 **File tasks.json**:
-Code: `"slack_webhook": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"`
+Code: `"slack_webhook": "https://hooks.slack.com/services/<secret-inside>"`
 Reason: Exposes a Slack webhook secret in source code, allowing attackers to post messages to the workspace.
 
 **Summary:** The commit introduces multiple high‑severity issues: remote script execution via curl/wget piped directly to the shell on both Unix and Windows, hard‑coded authentication tokens, and an exposed Slack webhook URL. These patterns are indicative of malicious intent and constitute clear security risks, therefore the commit is classified as MALWARE.
