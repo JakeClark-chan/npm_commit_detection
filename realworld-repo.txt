@@ -1,0 +1,1358 @@
+
+OpenSource Malware Logo
+OPENSOURCEMALWARE
+Community Threat Database
+
+Blog
+Report Threat
+Sign In
+Search & Filter Threats
+Search threats, packages, domains...
+Search
+
+Repositories
+
+All Severity
+
+All Status
+100
+Filtered Verified
+0
+Filtered Packages
+0
+Pending Reports
+100
+Search Results
+🔗
+https://bitbucket.org/pro-testing/testing/
+repository
+HIGH
+VERIFIED
+This repository delivered a contagious-interview payload that uses malicious Microsoft VSCode tasks.json file.
+
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/zunayedology/helio-backend-java-testing
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/suyx/spacetime_test
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/skipper2004/Test
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/shangesh-tech/thirdweb_testing
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/shangesh-tech/Full-stack-AI-Interview
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/ramkrishnakuldeep/react-test
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/megaorg995/tokentradingdapp
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/jpoullet2000/ethvault_staking_project
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/ihzhatamamy/-MagicDoor_Property_Rental
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/helidonashabani/student-management
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/harshangowda84/expense_tracker
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/goldendragon68/Bullana
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/eferos93/test4
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/eduardoinoa18/ufficient-platform
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/djeday123/test_repo1
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/deepakgudla/healthcare-backend-test
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/aka-rider/contagious-interview-malware-do-not-run
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/VitthalGund/Koinos-Test
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/Roberto328/TokenPresaleDApp
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/MentarisHub121/TokenPresaleApp
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/JanAndriessens/CalyBase
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/Banksy-said-hi/malicious
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @6mile
+12/31/2025
+View Details
+🔗
+https://github.com/Up-Pro-1/w3glpop/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/30/2025
+View Details
+🔗
+https://github.com/Astra-Byte-Sync-Cop/social-app-mvp/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+contagious-interview-vscode
+by @6mile
+12/30/2025
+View Details
+🔗
+https://github.com/rajaXcodes/Token-Presale-dApp
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+contagious-interview-vscode
+dprk
+fake-recruiter
+by @6mile
+12/30/2025
+View Details
+🔗
+https://github.com/trustledgerlabs/Token-Presale-dApp
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+contagious-interview-vscode
+by @6mile
+12/30/2025
+View Details
+🔗
+https://bitbucket.org/future_maker/tradingview/
+repository
+HIGH
+VERIFIED
+This repository includes a North Korean fake recruiter "contagious-interview" style infostealer.
+
+contagious-interview
+north-korea
+dprk
+fake-recruiter
+by @6mile
+12/30/2025
+View Details
+🔗
+https://github.com/nelsondev19/defi-property
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/29/2025
+View Details
+🔗
+https://github.com/AKJ-0483/student-system/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+fake-recruiter
+by @txhaflaire
+12/29/2025
+View Details
+🔗
+https://github.com/ironforgedevplace/caladanlmngadmin/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/29/2025
+View Details
+🔗
+https://github.com/eastmade/web3project-momo-token
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/29/2025
+View Details
+🔗
+https://github.com/Aneesh495/DeFi-Property/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/23/2025
+View Details
+🔗
+https://github.com/mladenovicmilan/milan-mladenovic-test/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/23/2025
+View Details
+🔗
+https://github.com/niyathi-ramesh/test_demo/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/23/2025
+View Details
+🔗
+https://github.com/fayeed/thirdweb-task/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/23/2025
+View Details
+🔗
+https://github.com/protoma37/Mockup/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/23/2025
+View Details
+🔗
+https://github.com/0x014-e1c/messageforge/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+contagious-interview-vscode
+vscode
+dprk
+by @txhaflaire
+12/22/2025
+View Details
+🔗
+https://github.com/ClayerTown-lgtm/Token-Order/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/20/2025
+View Details
+🔗
+https://github.com/jjin43/invelo_assessment/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/20/2025
+View Details
+🔗
+https://github.com/wilsonwen-2145/voting-prototype/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/20/2025
+View Details
+🔗
+https://github.com/michael-hll/student-management/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/18/2025
+View Details
+🔗
+https://github.com/SolutionsDevop/BestCity-Project/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/18/2025
+View Details
+🔗
+https://github.com/Jash-Bohare/Backend-Smart-Contract-Integration/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/17/2025
+View Details
+🔗
+https://github.com/brahmabit/be_challenge_blockchain/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/17/2025
+View Details
+🔗
+https://github.com/brahmabit/be_challenge_blockchain
+repository
+CRITICAL
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+dprk
+north-korea
+lazarus
+fake-recruiter
+vercel
+vscode
+beavertail
+invisible-ferret
+contagious-interview
+cryptostealer
+by @6mile
+12/17/2025
+View Details
+🔗
+https://github.com/user2745/dev-test-kamto-kionos/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/16/2025
+View Details
+🔗
+https://github.com/Andre1917/challenge/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/16/2025
+View Details
+🔗
+https://github.com/huicanvie/CanvieApiTest/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/16/2025
+View Details
+🔗
+https://github.com/megaorg994/tokentradingdapp
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/16/2025
+View Details
+🔗
+https://github.com/Richelle128/TokenPresale-dApp
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+contagious-interview-vscode
+dprk
+north-korea
+lazarus
+fake-recruiter
+beavertail
+by @6mile
+12/16/2025
+View Details
+🔗
+https://github.com/mayankbagauli79/AcharyaPrashantDemoApp/
+repository
+CRITICAL
+VERIFIED
+This repository hosts XCSSET malware that will infect a victim's machine upon project compilation.
+
+xcsset
+by @txhaflaire
+12/15/2025
+View Details
+🔗
+https://github.com/dikshith-shetty/test9
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/15/2025
+View Details
+🔗
+https://github.com/metawake/node-task-test
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+north-korea
+lazarus
+fake-recruiter
+beavertail
+invisible-ferret
+by @txhaflaire
+12/15/2025
+View Details
+🔗
+https://github.com/marcinbodnar/14/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/15/2025
+View Details
+🔗
+https://github.com/siddharthaDevineni/test/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/15/2025
+View Details
+🔗
+https://github.com/shri33/Crypto-Trading-Platform/
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/15/2025
+View Details
+🔗
+github.com/prahaladbelavadi/CoinLocatorDemo
+repository
+CRITICAL
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+dprk
+by @6mile
+12/15/2025
+View Details
+🔗
+https://github.com/tayyabbabar2001/school-mgmt-backend
+repository
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/12/2025
+View Details
+🔗
+github.com/goodyn-cloud/TOKEN-ICO-STAKE/
+repository
+github
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/11/2025
+View Details
+🔗
+github.com/hackiftekhar/IQAudioRecorderController
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository installs the XCSSET malware, which targets macOS Xcode
+
+macos
+xcsset
+by @6mile
+12/11/2025
+View Details
+🔗
+github.com/hackiftekhar/IQPaywallUI
+repository
+github
+CRITICAL
+VERIFIED
+This repository hosts XCSSET malware that will infect a victim's machine upon project compilation.
+
+xcsset
+macos
+by @txhaflaire
+12/10/2025
+View Details
+🔗
+github.com/mbaivic23/testing/
+repository
+github
+CRITICAL
+VERIFIED
+This repository hosts DPRK related malware, flexibleferret and invisibleferret which will run once the project has been opened up in Visual Studio Code.
+
+dprk
+north-korea
+contagious-interview
+contagious-interview-vscode
+vscode
+backdoor
+beavertail
+invisible-ferret
+cryptostealer
+lazarus
+by @txhaflaire
+12/10/2025
+View Details
+🔗
+github.com/www11360-smart/mvp1.0.8/
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+dprk
+lazarus
+north-korea
+vscode
+by @txhaflaire
+12/9/2025
+View Details
+🔗
+github.com/goodyn-cloud/TOKEN-ICO/
+repository
+github
+CRITICAL
+VERIFIED
+Contagious Interview, newly found vercel related domain that launches invisible/flexibleferret by tasks.json loading from VSCode
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/8/2025
+View Details
+🔗
+github.com/BalteanuAndrei709/Multi-test-6/
+repository
+github
+CRITICAL
+VERIFIED
+Contagious Interview, newly found vercel related domain that launches invisible/flexibleferret by tasks.json loading from VSCode
+
+dprk
+contagious-interview-vscode
+by @txhaflaire
+12/8/2025
+View Details
+🔗
+github.com/emigimenezj/solice2021-school-management-system
+repository
+github
+HIGH
+VERIFIED
+Contagious Interview, newly found vercel related domain that launches invisible/flexibleferret by tasks.json loading from VSCode
+
+by @txhaflaire
+12/8/2025
+View Details
+🔗
+github.com/komangmahendra/rental-prop-task
+repository
+github
+HIGH
+VERIFIED
+GitHub repository related to the latest DPRK Contagious Interview campaign.
+
+contagious-interview-vscode
+dprk
+by @golbiga
+12/5/2025
+View Details
+🔗
+github.com/vb352/koinos-assessment
+repository
+github
+HIGH
+VERIFIED
+GitHub repository related to the latest DPRK Contagious Interview campaign.
+
+contagious-interview-vscode
+dprk
+by @golbiga
+12/5/2025
+View Details
+🔗
+github.com/megaorg991/tokentradingdapp
+repository
+github
+HIGH
+VERIFIED
+GitHub repository related to the latest DPRK Contagious Interview campaign.
+
+contagious-interview-vscode
+dprk
+by @golbiga
+12/5/2025
+View Details
+🔗
+github.com/TsionTesfaye/assignment
+repository
+github
+HIGH
+VERIFIED
+GitHub repository related to the latest DPRK Contagious Interview campaign.
+
+contagious-interview-vscode
+dprk
+by @golbiga
+12/5/2025
+View Details
+🔗
+github.com/rodrigogz64/MagicDoor-Property-Rental-Platform
+repository
+github
+HIGH
+VERIFIED
+GitHub repository related to the latest DPRK Contagious Interview campaign.
+
+contagious-interview-vscode
+dprk
+by @golbiga
+12/5/2025
+View Details
+🔗
+github.com/hackirby/skuld
+repository
+github
+CRITICAL
+VERIFIED
+Skuld is a "Discord-oriented" stealer that targets Windows systems. Despite the "educational purposes" disclaimer, it's a fully-functional piece of malware with extensive data exfiltration capabilities.
+
+info-stealer
+poc
+golang
+by @KanakSasak
+12/2/2025
+View Details
+🔗
+github.com/Luckystar483/QuickShop
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/winterteam29879/apom
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/tinitachodos/apom
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/tinitachodos/apom22
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/DAP2506/thirdweb-skill-test
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/markomilivojevic/ethvault_staking
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/softwareRoom1/skill-test
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/SmartPay24/Demo
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/ChainspaceHub/TokenPresaleApp
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/AbdullahSalihOner/golden-task
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/winterteam03311/apom
+repository
+github
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+contagious-interview-vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/MahnoorKhushbakht/test-assesment
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+backdoor
+beavertail
+contagious-interview
+contagious-interview-vscode
+cryptostealer
+dprk
+invisible-ferret
+lazarus
+north-korea
+vscode
+by @6mile
+12/1/2025
+View Details
+🔗
+github.com/Ambition-lead/linkfi
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+backdoor
+beavertail
+contagious-interview
+contagious-interview-vscode
+cryptostealer
+dprk
+invisible-ferret
+lazarus
+north-korea
+vscode
+by @6mile
+11/30/2025
+View Details
+🔗
+github.com/megaorg42/CoinLocatorDemo
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+backdoor
+beavertail
+contagious-interview
+contagious-interview-vscode
+cryptostealer
+dprk
+invisible-ferret
+lazarus
+north-korea
+vscode
+by @6mile
+11/30/2025
+View Details
+🔗
+github.com/Gerome125/TokenPresale-dApp
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version (November 2025) of the North Korean "Contagious Interview" threat campaign.
+
+backdoor
+beavertail
+contagious-interview
+contagious-interview-vscode
+cryptostealer
+dprk
+invisible-ferret
+lazarus
+north-korea
+by @6mile
+11/30/2025
+View Details
+🔗
+github.com/CapsuleLabs-lgtml/Coin-ICO
+repository
+github
+HIGH
+VERIFIED
+This GitHub repository is part of the latest version of the North Korean "Contagious Interview" threat campaign.
+
+backdoor
+beavertail
+contagious-interview
+contagious-interview-vscode
+cryptostealer
+dprk
+invisible-ferret
+lazarus
+north-korea
+vscode
+by @6mile
+11/30/2025
+View Details
+🔗
+github.com/CapsuleLabs-lgtml/Coin-ICO
+repository
+github
+HIGH
+VERIFIED
+This repository is part of the North Korean DPRK "contagious interview" malware campaign that seeks to steal crypto assets and credentials.
+
+north-korea
+dprk
+contagious-interview-vscode
+by @6mile
+11/28/2025
+View Details
+🔗
+p_e_t-admin@bitbucket.org/p_e_t/petshop.git
+repository
+HIGH
+VERIFIED
+This git repository is associated with a November 2025 North Korean fake recruiter campaign.
+
+beavertail
+bitbucket
+contagious-interview
+contagious-interview-vscode
+dprk
+fake-recruiter
+invisible-ferret
+lazarus
+north-korea
+vscode
+by @6mile
+11/20/2025
+View Details
+🔗
+github.com/RylieFrey/rylie
+repository
+github
+LOW
+VERIFIED
+Seems to be part of Indonesian Foods npm spam.
+
+indonesianfoods
+11/18/2025
+View Details
+🔗
+https://github.com/mimores/QkAGUx
+repository
+github
+MEDIUM
+VERIFIED
+Phishing , email harvesting schemes , tracking page
+
+github
+info-stealer
+phishing
+11/6/2025
+View Details
+🔗
+https://github.com/blackcrypto01/CryptoStealer
+repository
+github
+HIGH
+VERIFIED
+This malware is designed to intercept and manipulate cryptocurrency transactions. It operates by monitoring the system clipboard and silently replacing copied wallet addresses with those controlled by an attacker. When a victim pastes what they believe to be their intended address, the transaction is redirected elsewhere—often permanently.
+
+crypto-stealer
+malware
+11/3/2025
+View Details
+🔗
+https://github.com/samrat225/Select2AI_Extension
+repository
+github
+HIGH
+VERIFIED
+This repository has been identified as a smartloader.
+
+github
+smartloader
+loader
+11/3/2025
+View Details
+🔗
+https://bitbucket.org/notion-dex/ultrax
+repository
+HIGH
+VERIFIED
+This is a malicious git repository used by fake recruiters on LinkedIn to target developers and steal their cryptocurrency.
+
+bitbucket
+contagious-interview
+dprk
+fake-recruiter
+north-korea
+by @6mile
+10/25/2025
+View Details
+🔗
+https://gitlab.com/technical-manager-group/real-estate-project/
+repository
+HIGH
+VERIFIED
+This is a malicious git repository used by fake recruiters on LinkedIn to target developers and steal their cryptocurrency.
+
+contagious-interview
+dprk
+fake-recruiter
+gitlab
+by @6mile
+10/25/2025
+View Details
+🔗
+https://github.com/MegaFT027/ELO_presale
+repository
+github
+HIGH
+VERIFIED
+This is a malicious git repository used by fake recruiters on LinkedIn to target developers an steal their crypto currency.
+
+contagious-interview
+dprk
+fake-recruiter
+github
+north-korea
+by @6mile
+10/25/2025
+View Details
+🔗
+https://github.com/goldy1113
+repository
+github
+HIGH
+VERIFIED
+DPRK contagious interview-related git repository hosted on Bitbucket
+
+apt
+fake-recruiter
+github
+lazarus
+north-korea
+contagious-interview
+dprk
+by @6mile
+10/12/2025
+View Details
+🔗
+https://github.com/newbee96422/MetaWar_ver_4
+repository
+github
+HIGH
+VERIFIED
+DPRK contagious interview-related git repository hosted on GitHub
+
+apt
+fake-recruiter
+github
+lazarus
+north-korea
+dprk
+contagious-interview
+by @6mile
+10/12/2025
+View Details
+OpenSource Malware Logo
+OPENSOURCEMALWARE
+A community-driven platform for researchers to share intelligence on malicious packages, repositories, and CDNs in the open source ecosystem.
+
+Bluesky
+RESOURCES
+API Documentation
+Report Guidelines
+Verification Process
+Community Guidelines
+Contact Us
+© 2025 OpenSourceMalware.com - Built by security professionals, for security professionals
+
+Made with
+for the infosec community

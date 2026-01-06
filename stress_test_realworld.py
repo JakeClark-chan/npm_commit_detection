@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
+import tiktoken
 
 # Import project modules
 # Assumes the script is run from the project root or the same directory as stress_test.py
@@ -33,6 +34,13 @@ REALWORLD_LIST_FILE = "list-of-realworld-repo.json"
 REPORT_FILE = "realworld_stress_test_report.md"
 TMP_DIR = "/tmp/npm_commit_detection_stress_test" # Use system tmp as requested
 MAX_WORKERS_PER_REPO = 8
+MAX_TOKENS_LIMIT = 100000  # Skip verification if prompt exceeds this
+
+# Token counter (use cl100k_base which works for most models)
+try:
+    TOKEN_ENCODER = tiktoken.get_encoding("cl100k_base")
+except:
+    TOKEN_ENCODER = None
 
 def load_repo_list(file_path: str) -> List[str]:
     with open(file_path, 'r') as f:
@@ -71,19 +79,31 @@ def clone_repo(url: str, dest_path: str) -> bool:
         logger.error(f"Failed to clone {url}: {e}")
         return False
 
-def simple_verification(commit_sha, static_json):
+def simple_verification(commit_sha, static_json, pre_analysis=None):
     """
-    Simplified verification using only static analysis results.
+    Simplified verification using static analysis results and pre-analysis data.
     """
     model_name = StaticAnalysisConfig.MODEL
     llm = LLMService.get_llm(model_name=model_name, temperature=0.0)
     
     # Dynamic analysis is skipped, so pass empty or "skipped" info
     dynamic_json = {"status": "skipped", "reason": "Real-world stress test: Dynamic analysis skipped"}
+    
+    # Format pre-analysis data if available
+    pre_analysis_text = ""
+    if pre_analysis:
+        pre_analysis_text = f"""
+    Pre-Analysis (Repository & Commit Metadata):
+    - Repository: {pre_analysis.get('repo_name', 'Unknown')}
+    - Author: {pre_analysis.get('author', 'Unknown')}
+    - Date: {pre_analysis.get('date', 'Unknown')}
+    - Message: {pre_analysis.get('message', 'No message')}
+    - Files Changed: {pre_analysis.get('files_changed', 0)}
+    """
 
     prompt = f"""
     You are a security expert. Analyze the following reports for commit {commit_sha} and determine if it is benign or malware.
-    
+    {pre_analysis_text}
     Static Analysis:
     {json.dumps(static_json, indent=2)}
     
@@ -106,6 +126,13 @@ def simple_verification(commit_sha, static_json):
     }}
     output only the json.
     """
+    
+    # Check token count and skip if too large
+    if TOKEN_ENCODER:
+        token_count = len(TOKEN_ENCODER.encode(prompt))
+        if token_count > MAX_TOKENS_LIMIT:
+            logger.warning(f"Skipping {commit_sha}: prompt too large ({token_count} tokens > {MAX_TOKENS_LIMIT})")
+            return "benign", f"Skipped: Prompt too large ({token_count} tokens). Likely initial/merge commit."
     
     messages = [
         SystemMessage(content="You are a security expert. Output only valid JSON."),
@@ -203,8 +230,23 @@ def analyze_commit(commit_sha: str, repo_path: str) -> Dict[str, Any]:
         
         # Verification
         if static_res['total_issues'] > 0:
+            # Gather pre-analysis data (repo-level + commit metadata, no diff)
+            try:
+                metadata = repo.get_commit_metadata(commit_sha)
+                file_changes = repo.get_file_changes(commit_sha)
+                pre_analysis = {
+                    'repo_name': repo.name,
+                    'author': f"{metadata.author_name} <{metadata.author_email}>",
+                    'date': str(metadata.date),
+                    'message': metadata.message,
+                    'files_changed': len(file_changes)
+                }
+            except Exception as e:
+                logger.warning(f"Could not get pre-analysis for {commit_sha}: {e}")
+                pre_analysis = None
+            
             verif_start = time.time()
-            verdict, explanation = simple_verification(commit_sha, static_res)
+            verdict, explanation = simple_verification(commit_sha, static_res, pre_analysis)
             result["verification_time"] = time.time() - verif_start
             result["verdict"] = verdict
             result["explanation"] = explanation

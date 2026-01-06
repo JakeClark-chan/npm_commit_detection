@@ -43,4 +43,4 @@ class LLMConfig(BaseConfig):
     # Global LLM settings
     LLM_CHAT_COMPLETION = BaseConfig.get_env("LLM_CHAT_COMPLETION", "false").lower() == "true"
     CONCURRENT_THREADS = int(BaseConfig.get_env("CONCURRENT_THREADS", "1"))
-    REQUEST_TIMEOUT = int(BaseConfig.get_env("LLM_REQUEST_TIMEOUT", "60"))
+    REQUEST_TIMEOUT = int(BaseConfig.get_env("LLM_REQUEST_TIMEOUT", "120"))

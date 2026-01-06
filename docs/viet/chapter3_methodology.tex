@@ -1,0 +1,114 @@
+% Chapter 3: Methodology
+
+\chapter{PHƯƠNG PHÁP THỰC HIỆN} \label{Chapter3}
+
+\section*{Tóm tắt chương}
+Ở chương này, chúng tôi sẽ trình bày chi tiết kiến trúc và cơ chế hoạt động của \textbf{NeuroScan} - hệ thống phát hiện sớm commit độc hại trong chuỗi cung ứng phần mềm npm. Mô hình được đề xuất bao gồm 4 thành phần chính hoạt động theo quy trình tuần tự và bổ trợ lẫn nhau:
+\begin{itemize}
+    \item \textbf{Tiền phân tích (Pre-analysis)}: Giai đoạn lọc thô, đánh giá mức độ rủi ro ban đầu dựa trên siêu dữ liệu (metadata), lịch sử người đóng góp và các tệp tin nhạy cảm.
+    \item \textbf{Phân tích tĩnh (Static Analysis)}: Sử dụng Mô hình ngôn ngữ lớn (LLM) để hiểu ngữ nghĩa mã nguồn và phát hiện các mẫu tấn công tinh vi, kết hợp với công cụ quét lỗ hổng truyền thống (Snyk) như một module bổ trợ.
+    \item \textbf{Phân tích động (Dynamic Analysis)}: Thực thi mã nguồn trong môi trường hộp cát (sandbox) cô lập, sử dụng Package Hunter và Falco để giám sát các hành vi bất thường ở cấp độ hệ thống (system calls) và mạng.
+    \item \textbf{Xác thực và đưa ra kết luận (Verification)}: Giai đoạn tổng hợp thông minh, nơi LLM đóng vai trò như một chuyên gia bảo mật để đối chiếu (correlate) các phát hiện từ phân tích tĩnh và động, từ đó đưa ra phán quyết cuối cùng với độ tin cậy cao và giảm thiểu tỷ lệ dương tính giả.
+\end{itemize}
+
+\section{Mô hình hệ thống phát hiện sớm commit độc hại} \label{sec:neuroscan-arch}
+
+Nhằm giải quyết bài toán phát hiện các commit độc hại được chèn vào các thư viện mã nguồn mở một cách tinh vi, chúng tôi đề xuất kiến trúc hệ thống \textbf{NeuroScan} như được mô tả trong \textbf{Hình \ref{fig:neuroscan-diagram}}. Hệ thống được thiết kế theo tư tưởng "Phòng thủ theo chiều sâu" (Defense in Depth), không phụ thuộc vào một phương pháp duy nhất mà kết hợp sức mạnh của nhiều lớp phân tích.
+
+\begin{figure}[ht]
+	\centering
+	% Placeholder cho hình ảnh kiến trúc hệ thống
+	\includegraphics[width=\textwidth]{src/images/chapter3/NeuroScanArchitecture.png}
+	\caption{Kiến trúc tổng thể của hệ thống NeuroScan}
+	\label{fig:neuroscan-diagram}
+\end{figure}
+
+\bigbreak\noindent
+Quy trình xử lý bắt đầu khi hệ thống nhận đầu vào là thông tin của một kho lưu trữ (Repository) và mã định danh của commit (Commit SHA) cần kiểm tra. Dữ liệu này sẽ lần lượt đi qua 4 lớp phân tích:
+\begin{enumerate}
+    \item \textbf{Input Layer}: Tiếp nhận yêu cầu, tải mã nguồn và trích xuất thông tin thay đổi (diff).
+    \item \textbf{Pre-analysis Layer}: Phân tích siêu dữ liệu để đánh giá hồ sơ rủi ro.
+    \item \textbf{Deep Analysis Layer}: Thực hiện song song Phân tích Tĩnh (Static) và Phân tích Động (Dynamic).
+    \item \textbf{Verification Layer}: Tổng hợp kết quả và đưa ra phán quyết.
+\end{enumerate}
+
+Đầu ra của hệ thống là một báo cáo chi tiết (Detailed Report) ở định dạng Markdown/JSON, cung cấp bằng chứng cụ thể cho từng phát hiện (ví dụ: dòng code độc hại, địa chỉ IP kết nối đến C2 server) và một nhãn phán quyết cuối cùng (\textit{CLEAN}, \textit{SUSPICIOUS}, hoặc \textit{MALICIOUS}).
+
+\section{Tiền phân tích (Pre-analysis)} \label{sec:pre-analysis}
+Đây là tuyến phòng thủ đầu tiên, được thiết kế để hoạt động cực nhanh nhằm loại bỏ các commit rõ ràng là an toàn hoặc đánh dấu ngay các commit có dấu hiệu bất thường về mặt quản trị.
+
+\subsection{Đánh giá độ tin cậy người đóng góp (Contributor Trust Scoring)}
+Chúng tôi xây dựng một chỉ số gọi là \textit{Trust Score} ($T_c$) cho mỗi tác giả commit. Điểm số này được tính toán dựa trên lịch sử hoạt động của họ trong repo:
+\begin{equation}
+    T_c = \min\left(\frac{N_{commits}}{50}, 1.0\right)
+\end{equation}
+Trong đó $N_{commits}$ là số lượng commit hợp lệ trước đó. Nếu $T_c < 0.2$ (tức là người dùng mới hoặc ít hoạt động), hệ thống sẽ tự động nâng mức cảnh báo cho các giai đoạn sau.
+
+\subsection{Phát hiện tệp nhạy cảm và Bất thường thay đổi}
+Module này quét danh sách các tệp bị thay đổi để tìm kiếm các tệp cấu hình quan trọng thường bị kẻ tấn công nhắm tới, bao gồm:
+\begin{itemize}
+    \item Cấu hình build và package: \texttt{package.json}, \texttt{rollup.config.js}.
+    \item Scripts thực thi: \texttt{install.sh}, \texttt{setup.js}.
+    \item Tệp nhạy cảm hệ thống: \texttt{.env}, \texttt{id\_rsa}.
+\end{itemize}
+Ngoài ra, hệ thống cũng phát hiện các bất thường về kích thước commit (Large Commit Anomaly) khi số lượng dòng thêm/xóa vượt quá ngưỡng quy định (ví dụ: > 500 dòng), vì kẻ tấn công thường cố gắng "giấu" mã độc trong các commit khổng lồ.
+
+\section{Phân tích tĩnh (Static Analysis)} \label{sec:static-analysis}
+Lớp phân tích tĩnh tập trung vào việc đọc hiểu mã nguồn mà không cần thực thi nó. Điểm mới của NeuroScan so với các công cụ SAST truyền thống là việc ứng dụng LLM để hiểu ngữ nghĩa.
+
+\subsection{Phân tích ngữ nghĩa bằng LLM}
+Thay vì chỉ dựa vào khớp mẫu (pattern matching), chúng tôi trích xuất phần `git diff` của các tệp rủi ro cao và gửi đến LLM (GPT-4o) với một prompt chuyên biệt. LLM đóng vai trò như một chuyên gia bảo mật (Security Auditor), phân tích logic của code để trả lời các câu hỏi:
+\begin{itemize}
+    \item Đoạn code này có thực hiện kết nối mạng đến tên miền lạ không?
+    \item Có hành vi giải mã (decode) payload bị che giấu không?
+    \item Có cố gắng truy cập các biến môi trường hoặc tệp hệ thống không?
+\end{itemize}
+
+\subsection{Tích hợp Snyk (Module phụ trợ)}
+Để tăng cường khả năng phát hiện các lỗ hổng đã biết (CVE), chúng tôi tích hợp Snyk - một công cụ quét bảo mật thương mại hàng đầu. Snyk đóng vai trò như một module bổ trợ, quét toàn bộ mã nguồn tại thời điểm commit để phát hiện các lỗ hổng bảo mật tiêu chuẩn (ví dụ: Prototype Pollution, Command Injection). Kết quả từ Snyk được chuẩn hóa và đưa vào luồng xác minh chung.
+
+\section{Phân tích động (Dynamic Analysis)} \label{sec:dynamic-analysis}
+Những mã độc tinh vi thường chỉ bộc lộ hành vi khi chạy thực tế (runtime). Phân tích động giải quyết vấn đề này bằng cơ chế Sandbox.
+
+\subsection{Môi trường Sandbox với Package Hunter}
+Chúng tôi sử dụng Package Hunter để tạo ra một môi trường Docker cô lập. Quy trình thực hiện như sau:
+\begin{enumerate}
+    \item Đóng gói repository hiện tại thành một gói `.tgz` (giả lập lệnh \texttt{npm pack}).
+    \item Cài đặt gói này vào trong container (\texttt{npm install <package>.tgz}).
+    \item Kích hoạt các lifecycle scripts (như \texttt{preinstall}, \texttt{postinstall}) - nơi ẩn náu phổ biến nhất của mã độc chuỗi cung ứng.
+\end{enumerate}
+
+\subsection{Giám sát hành vi hệ thống (System Call Monitoring)}
+Trong quá trình cài đặt, chúng tôi sử dụng \textbf{Falco} để lắng nghe các lời gọi hệ thống (syscalls) ở cấp độ kernel. Các hành vi sau sẽ bị ghi nhận là độc hại:
+\begin{itemize}
+    \item \textbf{Network Activity}: Mở kết nối đến IP lạ, gửi dữ liệu ra ngoài.
+    \item \textbf{File Access}: Đọc \texttt{/etc/passwd}, \texttt{/home/.ssh}, hoặc ghi vào các thư mục khởi động.
+    \item \textbf{Process Execution}: Gọi \texttt{/bin/sh}, \texttt{curl}, \texttt{wget} hoặc tạo shell ngược (reverse shell).
+\end{itemize}
+
+\section{Xác thực và Đưa ra kết luận (Verification)} \label{sec:verification}
+Đây là thành phần "bộ não" của hệ thống, giải quyết vấn đề nhiễu tin (noise) thường gặp trong các hệ thống IDS.
+
+\subsection{Cơ chế tương quan (Correlation Mechanism)}
+Một LLM thứ cấp được sử dụng để tổng hợp kết quả từ tất cả các bước trước đó. Nó hoạt động dựa trên nguyên tắc "đối chiếu chéo" (cross-referencing):
+\begin{quotation}
+"Nếu Phân tích tĩnh phát hiện một chuỗi URL khả nghi trong code, VÀ Phân tích động ghi nhận một kết nối mạng đến chính URL đó \textbf{$\rightarrow$} Xác nhận là \textbf{MALICIOUS} với độ tin cậy Tuyệt đối."
+\end{quotation}
+
+\subsection{Ma trận ra quyết định}
+Hệ thống sử dụng một ma trận quy tắc để đưa ra phán quyết cuối cùng:
+\begin{table}[ht]
+    \centering
+    \caption{Ma trận quyết định (Decision Matrix)}
+    \begin{tabular}{|l|l|l|l|}
+    \hline
+    \textbf{Static (LLM)} & \textbf{Dynamic (Falco)} & \textbf{Snyk} & \textbf{Verdict} \\ \hline
+    High Risk & Malicious Activity & - & \textbf{MALICIOUS} \\ \hline
+    Suspicious & Suspicious & - & \textbf{MALICIOUS} \\ \hline
+    Clean & Malicious Activity & - & \textbf{MALICIOUS} (Ưu tiên Dynamic) \\ \hline
+    High Risk & Clean & Low & \textbf{SUSPICIOUS} (Cần review) \\ \hline
+    Clean & Clean & Clean & \textbf{CLEAN} \\ \hline
+    \end{tabular}
+\end{table}
+
+Kết quả của giai đoạn này là thông tin đầu vào quan trọng cho các hệ thống CI/CD để quyết định chặn (block) hay cho phép (allow) commit được hợp nhất.

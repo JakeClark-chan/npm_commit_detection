@@ -12,7 +12,7 @@ MALWARE_SOURCE = Path("../npm_malware_extracted")
 BENIGN_SOURCE = Path("../npm_benign_extracted")
 TRUTH_FILE = Path("truth_commits.json")
 OUTPUT_FILE = Path("truth_subset_commits.json")
-BASE_TAG = "8.19.4"
+BASE_TAG = "8.19.3"
 NEW_TAG = "8.19.5"
 COUNT_PER_TYPE = 50
 

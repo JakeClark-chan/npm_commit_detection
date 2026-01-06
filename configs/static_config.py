@@ -15,52 +15,23 @@ class StaticAnalysisConfig(BaseConfig):
     # Suspicious patterns to look for
     SUSPICIOUS_PATTERNS = {
         'network': [
-            r'https?://[^\s\'"]+',  # URLs
-            r'fetch\s*\(',
-            r'axios\.',
-            r'http\.get',
-            r'http\.post',
-            r'XMLHttpRequest',
+            r'https?://[^\s\'"]+', r'fetch\s*\(', r'axios\.', r'http\.get', r'http\.post', r'XMLHttpRequest',
         ],
         'crypto': [
-            r'crypto\.createHash',
-            r'bitcoin',
-            r'ethereum',
-            r'wallet',
-            r'private.*key',
-            r'mnemonic',
+            r'crypto\.createHash', r'bitcoin', r'ethereum', r'wallet', r'private.*key', r'mnemonic',
         ],
         'env': [
-            r'process\.env\.',
-            r'ENV\[',
-            r'getenv\(',
+            r'process\.env\.', r'ENV\[', r'getenv\(',
         ],
         'eval': [
-            r'\beval\s*\(',
-            r'Function\s*\(',
-            r'vm\.runInNewContext',
-            r'child_process',
-            r'exec\s*\(',
-            r'spawn\s*\(',
+            r'\beval\s*\(', r'Function\s*\(', r'vm\.runInNewContext', r'child_process', r'exec\s*\(', r'spawn\s*\(',
         ],
         'shell': [
-            r'curl\s+',
-            r'wget\s+',
-            r'bash\s+',
-            r'\bsh\s+',
-            r'powershell',
-            r'cmd\.exe',
-            r'/bin/sh',
-            r'/bin/bash',
-            r'\|\s*sh',
-            r'\|\s*bash',
+            r'curl\s+', r'wget\s+', r'bash\s+', r'\bsh\s+', r'powershell', r'cmd\.exe', r'/bin/sh', r'/bin/bash', r'\|\s*sh', r'\|\s*bash',
         ],
         'obfuscation': [
-            r'\\x[0-9a-fA-F]{2}',  # Hex encoding
-            r'String\.fromCharCode',
-            r'atob\s*\(',
-            r'Buffer\.from.*base64',
-        ]
+            r'\\x[0-9a-fA-F]{2}', r'String\.fromCharCode', r'atob\s*\(', r'Buffer\.from.*base64',
+        ],
     }
 
     # Define ignored extensions and directories - Adjusted based on user feedback to keep scripts/configs

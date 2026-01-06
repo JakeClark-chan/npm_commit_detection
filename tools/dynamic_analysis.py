@@ -94,58 +94,10 @@ class DynamicAnalyzer:
                 capture_output=True,
                 text=True
             )
-            # PROBLEM: Because package is broken, so we don't need to try very hard to fix it
-            # # Fix peer dependency issues for Package Hunter
-            # # 1. Create .npmrc with legacy-peer-deps=true
-            # npmrc_path = repo_path / ".npmrc"
-            # with open(npmrc_path, 'w') as f:
-            #     f.write("legacy-peer-deps=true\n")
-            
-            # # 2. Ensure .npmrc is included in package.json 'files' whitelist
-            # # And upgrade React to 18 to resolve peer dependency issues
-            # pkg_json_path = repo_path / "package.json"
-            # if pkg_json_path.exists():
-            #     try:
-            #         with open(pkg_json_path, 'r') as f:
-            #             pkg_data = json.load(f)
-                    
-            #         changed = False
-                    
-            #         # Add .npmrc to files
-            #         if 'files' in pkg_data and isinstance(pkg_data['files'], list):
-            #             if '.npmrc' not in pkg_data['files']:
-            #                 pkg_data['files'].append('.npmrc')
-            #                 changed = True
-            #                 print("✅ Added .npmrc to package.json files list")
 
-            #         # Upgrade React to 18
-            #         for dep_type in ['dependencies', 'devDependencies']:
-            #             if dep_type in pkg_data:
-            #                 if 'react' in pkg_data[dep_type]:
-            #                     pkg_data[dep_type]['react'] = '^18.2.0'
-            #                     changed = True
-            #                     print(f"✅ Updated react in {dep_type} to ^18.2.0")
-            #                 if 'react-dom' in pkg_data[dep_type]:
-            #                     pkg_data[dep_type]['react-dom'] = '^18.2.0'
-            #                     changed = True
-            #                     print(f"✅ Updated react-dom in {dep_type} to ^18.2.0")
-
-            #         if changed:
-            #             with open(pkg_json_path, 'w') as f:
-            #                 json.dump(pkg_data, f, indent=2)
-                            
-            #     except Exception as e:
-            #         print(f"⚠️ Failed to update package.json: {e}")
-
-            # # 3. Remove package-lock.json if it exists
-            # # This avoids strict version locking conflicts
-            # lock_file = repo_path / "package-lock.json"
-            # if lock_file.exists():
-            #     lock_file.unlink()
-            
             # Run npm pack
             result = subprocess.run(
-                ["npm", "pack", "--ignore-scripts"],
+                ["npm", "pack"],
                 cwd=repo_path,
                 capture_output=True,
                 text=True,
@@ -300,7 +252,7 @@ class DynamicAnalyzer:
         if not self._check_server_availability():
             print("❌ Package Hunter server is not available at", self.package_hunter_url)
             print("   Please ensure the server is running with:")
-            print("   FALCO_TOKEN=<token> NODE_ENV=development DEBUG=pkgs* node src/server.js")
+            print("   NODE_ENV=development DEBUG=pkgs* node src/server.js")
             return None
         
         print("✅ Package Hunter server is available")
