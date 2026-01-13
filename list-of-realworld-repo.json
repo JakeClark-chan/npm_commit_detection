@@ -33,11 +33,10 @@
         "https://github.com/vb352/koinos-assessment",
         "https://github.com/blackcrypto01/CryptoStealer",
         "https://github.com/BalteanuAndrei709/Multi-test-6",
-        "https://github.com/michael-hll/student-management",
-        "https://github.com/fayeed/thirdweb-task",
         "https://github.com/0x014-e1c/messageforge",
         "https://github.com/TsionTesfaye/assignment",
         "https://github.com/RylieFrey/rylie"
     ],
-    "label": "malware"
+    "label": "malware",
+    "note": "36 repositories - removed 2 unavailable repos (michael-hll/student-management, fayeed/thirdweb-task)"
 }

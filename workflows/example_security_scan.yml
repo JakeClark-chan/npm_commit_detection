@@ -62,9 +62,9 @@ jobs:
           echo "Installing Python dependencies..."
           uv pip install -r requirements.txt
           
-          # 2. Setup Deobfuscator Tool
-          echo "Installing Deobfuscator Tool globally..."
-          npm install -g obfuscator-io-deobfuscator
+          # 2. Setup Deobfuscator Tool - Commented out for now
+          # echo "Installing Deobfuscator Tool globally..."
+          # npm install -g obfuscator-io-deobfuscator
           
           # 3. Run Analysis
           echo "Current directory before running python:"

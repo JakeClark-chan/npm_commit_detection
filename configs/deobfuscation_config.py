@@ -8,7 +8,7 @@ class DeobfuscationConfig(BaseConfig):
     FILE_OUTPUT = "<file-output>"
 
     # Enable/Disable the agent
-    ENABLED = BaseConfig.get_env("DEOBFUSCATION_ENABLED", "true").lower() == "true"
+    ENABLED = False
 
     # Tool to use for deobfuscation (it will be installed via npm install)
     TOOL_NAME = "obfuscator-io-deobfuscator"
